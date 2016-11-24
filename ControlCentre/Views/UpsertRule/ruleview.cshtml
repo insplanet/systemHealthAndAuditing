@@ -1,0 +1,42 @@
+﻿@model HealthAndAuditShared.MaxAmountOfFailuresRule
+
+@{
+    ViewBag.Title = "ruleview";
+}
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title></title>
+    <style>
+        .code {
+            font-family: Consolas,Menlo,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New,monospace,sans-serif;
+            font-size: 13px;
+            background-color: #eff0f1;
+            padding: 4px;
+            border: 1px solid black;
+        }
+    </style>
+    <script>
+        function getDoc() {
+            let inp = document.getElementById('docidinp');
+            window.location = location.protocol + '//' + window.location.host + '/home/viewdoc/' + inp.value;
+        }
+    </script>
+</head>
+<body>
+    <div style="margin: 20px;">
+        <h2>ruleview</h2>
+        @using (Html.BeginForm("create","UpsertRule",FormMethod.Post,new {}))
+        {
+
+            @Html.TextBoxFor(model => model.RuleName)
+
+            <input type="submit" value="Create rule" />
+        }
+
+        @Html.ActionLink("skapa", "create", "UpsertRule")
+    </div>
+</body>
+</html>

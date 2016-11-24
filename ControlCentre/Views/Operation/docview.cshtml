@@ -1,0 +1,57 @@
+﻿@model  HealthAndAuditShared.OperationResult
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title></title>
+    <style>
+        .code {
+            font-family: Consolas,Menlo,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New,monospace,sans-serif;
+            font-size: 13px;
+            background-color: #eff0f1;
+            padding: 4px;
+            border: 1px solid black;
+        }
+    </style>
+    <script>
+        function getDoc() {
+            let inp = document.getElementById('docidinp');
+            window.location = location.protocol + '//' + window.location.host + '/home/viewdoc/' + inp.value;
+        }
+    </script>
+</head>
+<body>
+    <div style="margin:20px;">
+        <div style="margin-bottom:20px;">
+            <input type="text" id="docidinp" value="@ViewBag.documentid" />&nbsp;<input type="button" onclick="getDoc();" value="Get document" />
+        </div>
+        
+        @if (Model != null)
+        {
+            <div>
+                Loaded document: @Model.PartitionKey : @Model.RowKey
+            </div>
+            <div class="code">
+                From program: @(Model.AppInfo?.ApplicationName ?? "unknown"), version @(Model.AppInfo?.ApplicationVersion ?? new Version(0, 0)) running at @(Model.AppInfo?.ApplicationLocation ?? "unknown location")<br />
+                Operation name: @Model.OperationName<br />
+                Operation result: @Model.Result<br />
+                Occured: @Model.TimeStampUtc (UTC)<br />
+                Other info: @Model.OtherInfo<br/>
+                @Html.Raw(ViewBag.objectDump)
+            </div>
+        }
+        <br/>
+        @if (ViewBag.pageException != null)
+        {
+            <div class="code">
+                @Html.Raw(ViewBag.pageException)
+            </div>
+        }
+    </div>
+</body>
+</html>
