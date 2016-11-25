@@ -62,7 +62,7 @@ namespace Eventpump
 
 
 
-                        var opres = new OperationResult(OperationResult.OpResult.Failure);
+                        var opres = new SystemEvent(SystemEvent.OperationResult.Failure);
                         opres.OtherInfo = $"{t++}";
 
                         if(t%2 == 0)
@@ -84,11 +84,11 @@ namespace Eventpump
 
                         if(t%6 == 0)
                         {
-                            opres.Result = OperationResult.OpResult.Success;
+                            opres.Result = SystemEvent.OperationResult.Success;
                         }
                         else
                         {
-                            opres.Result = OperationResult.OpResult.Failure;
+                            opres.Result = SystemEvent.OperationResult.Failure;
                             opres.CaughtException = new NullReferenceException();
                             //string error = null;
                             //try
@@ -104,7 +104,7 @@ namespace Eventpump
                             //}
                             //catch(Exception ex)
                             //{
-                            //    opres.Result = OperationResult.OpResult.Failure;
+                            //    opres.Result = SystemEvent.OperationResult.Failure;
                             //    opres.CaughtException = ex;
                             //}
                         }

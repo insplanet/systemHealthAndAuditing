@@ -110,7 +110,7 @@ namespace QuickAnalyzer
 
             public async Task ProcessEventsAsync(PartitionContext context, IEnumerable<EventData> messages)
             {
-                var parsedData = messages.Select(eventData => Encoding.UTF8.GetString(eventData.GetBytes())).Select(JsonConvert.DeserializeObject<OperationResult>).ToList();
+                var parsedData = messages.Select(eventData => Encoding.UTF8.GetString(eventData.GetBytes())).Select(JsonConvert.DeserializeObject<SystemEvent>).ToList();
                 await Engine.AddToMainQueue(parsedData);
                 var batches = new Dictionary<string, TableBatchOperation>();
                 var batchNames = new Dictionary<string, string>();

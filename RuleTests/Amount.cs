@@ -13,7 +13,7 @@ namespace RuleTests
         [TestMethod]
         public void TestFourOps()
         {
-            var op = new OperationResult(OperationResult.OpResult.Failure);
+            var op = new SystemEvent(SystemEvent.OperationResult.Failure);
             Assert.IsFalse(Rule.AddAndCheckIfTriggered(op));
             Assert.IsFalse(Rule.AddAndCheckIfTriggered(op));
             Assert.IsFalse(Rule.AddAndCheckIfTriggered(op));
@@ -22,7 +22,7 @@ namespace RuleTests
         [TestMethod]
         public void TestTtl()
         {
-            var op = new OperationResult(OperationResult.OpResult.Failure);
+            var op = new SystemEvent(SystemEvent.OperationResult.Failure);
             Assert.IsFalse(Rule.AddAndCheckIfTriggered(op));
             Assert.IsFalse(Rule.AddAndCheckIfTriggered(op));
             Assert.IsFalse(Rule.AddAndCheckIfTriggered(op));
@@ -32,7 +32,7 @@ namespace RuleTests
         [TestMethod]
         public void TestLongFlow()
         {
-            var op = new OperationResult(OperationResult.OpResult.Failure);
+            var op = new SystemEvent(SystemEvent.OperationResult.Failure);
             Assert.IsFalse(Rule.AddAndCheckIfTriggered(op));
             Assert.IsFalse(Rule.AddAndCheckIfTriggered(op));
             Assert.IsFalse(Rule.AddAndCheckIfTriggered(op));

@@ -13,7 +13,7 @@ namespace HealthAndAuditShared
 {
     public interface IOperationResultChannel
     {
-        void ReportOperationResult(OperationResult opResult);
+        void ReportOperationResult(SystemEvent opResult);
 
     }
 }

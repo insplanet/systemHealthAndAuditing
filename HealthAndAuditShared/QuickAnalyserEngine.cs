@@ -71,14 +71,14 @@ namespace HealthAndAuditShared
         {
             EngineMessages.Enqueue(new TimeStampedMessage<string>(DateTime.UtcNow, message));
         }
-        private ConcurrentQueue<OperationResult> MainEventQueue { get; } = new ConcurrentQueue<OperationResult>();
+        private ConcurrentQueue<SystemEvent> MainEventQueue { get; } = new ConcurrentQueue<SystemEvent>();
         private ConcurrentDictionary<string, ProgramAnalyser> Analysers { get; } = new ConcurrentDictionary<string, ProgramAnalyser>();
 
         /// <summary>
-        /// Adds a list of <see cref="OperationResult"/>s to main queue of the engine.
+        /// Adds a list of <see cref="SystemEvent"/>s to main queue of the engine.
         /// </summary>
         /// <param name="results">The results.</param>
-        public async Task AddToMainQueue(List<OperationResult> results)
+        public async Task AddToMainQueue(List<SystemEvent> results)
         {
             await Task.Run(() =>
                            {
@@ -104,7 +104,7 @@ namespace HealthAndAuditShared
                                   AddMessage("Main engine Task started.");
                                   while (true)
                                   {
-                                      OperationResult fromQ;
+                                      SystemEvent fromQ;
                                       if (MainEventQueue.TryDequeue(out fromQ))
                                       {
                                           if (Analysers.ContainsKey(fromQ.AppInfo.ApplicationName))
@@ -179,8 +179,8 @@ namespace HealthAndAuditShared
             private AlarmMessageManager AlarmMessageManager { get; }
             public bool AnalyserIsRunning { get; private set; }
             private ConcurrentDictionary<string, AnalyseRuleset> RuleSets { get; } = new ConcurrentDictionary<string, AnalyseRuleset>();
-            private ConcurrentQueue<OperationResult> EventQueue { get; } = new ConcurrentQueue<OperationResult>();
-            public void AddEvent(OperationResult result)
+            private ConcurrentQueue<SystemEvent> EventQueue { get; } = new ConcurrentQueue<SystemEvent>();
+            public void AddEvent(SystemEvent result)
             {
                 EventQueue.Enqueue(result);
             }
@@ -194,7 +194,7 @@ namespace HealthAndAuditShared
                                        AnalyserIsRunning = true;
                                        while (true)
                                        {
-                                           OperationResult fromQ;
+                                           SystemEvent fromQ;
                                            if (EventQueue.TryDequeue(out fromQ))
                                            {
                                                Parallel.ForEach(RuleSets.Where(r => string.IsNullOrEmpty(r.Value.OperationName) || r.Value.OperationName.Equals(fromQ.OperationName)), ruleSet =>

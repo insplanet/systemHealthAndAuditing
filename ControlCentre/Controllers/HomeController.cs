@@ -31,23 +31,23 @@ namespace ControlCentre.Controllers
         public ActionResult ViewDoc(string id)
         {
             ViewBag.documentid = id;
-            OperationResult opResult;
+            SystemEvent opResult;
             return GetDocument(id, out opResult) ? View("docview",opResult) : View("docview");
         }
 
-        private bool GetDocument(string documentID, out OperationResult operationResult)
+        private bool GetDocument(string documentID, out SystemEvent systemEvent)
         {
-            operationResult = null;
+            systemEvent = null;
             try
             {
                 var storageMan = new AzureStorageManager(ConfigurationManager.AppSettings["AzureStorageConnectionString"]);
                 var table = storageMan.GetTableReference(ConfigurationManager.AppSettings["TableName"]);
-                var splitID = OperationResult.DecodeIDToPartitionAndRowKey(documentID);
-                var op = TableOperation.Retrieve<OperationResult>(splitID.Item1, splitID.Item2);
+                var splitID = SystemEvent.DecodeIDToPartitionAndRowKey(documentID);
+                var op = TableOperation.Retrieve<SystemEvent>(splitID.Item1, splitID.Item2);
                 var doc = table.Execute(op);
-                operationResult = (OperationResult)doc.Result;
-                ViewBag.pageException = FormatException(operationResult.CaughtException);
-                ViewBag.objectDump = GetObjectDump(operationResult.OperationParameters);
+                systemEvent = (SystemEvent)doc.Result;
+                ViewBag.pageException = FormatException(systemEvent.CaughtException);
+                ViewBag.objectDump = GetObjectDump(systemEvent.OperationParameters);
                 return true;
             }
             catch(Exception ex)

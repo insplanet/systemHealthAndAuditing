@@ -90,7 +90,7 @@
     <Compile Include="EventHubSenderAndProcessor.cs" />
     <Compile Include="IOperationResultChannel.cs" />
     <Compile Include="MessageAggregator.cs" />
-    <Compile Include="OperationResult.cs" />
+    <Compile Include="SystemEvent.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QuickAnalyserEngine.cs" />
     <Compile Include="AlarmChannels\SlackClient.cs" />

@@ -29,7 +29,7 @@ namespace HealthAndAuditShared
             Listen_EventHubConnectionstring = listenConnectionstring;
             EventHubPath = eventHubPath;
         }
-        public void ReportOperationResult(OperationResult opResult)
+        public void ReportOperationResult(SystemEvent opResult)
         {
             if(string.IsNullOrWhiteSpace(Send_EventHubConnectionstring))
             {
