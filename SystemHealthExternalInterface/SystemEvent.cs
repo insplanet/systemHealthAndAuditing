@@ -9,6 +9,7 @@
 *																						*
 *	Contributors: Mikael Axblom															*
 *****************************************************************************************/
+
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -16,7 +17,7 @@ using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 using Newtonsoft.Json;
 
-namespace HealthAndAuditShared
+namespace SystemHealthExternalInterface
 {
     [Serializable]
     public class SystemEvent : TableEntity

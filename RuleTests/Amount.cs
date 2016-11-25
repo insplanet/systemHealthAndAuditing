@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using SystemHealthExternalInterface;
 using HealthAndAuditShared;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 

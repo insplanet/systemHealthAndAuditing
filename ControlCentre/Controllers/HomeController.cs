@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Text;
 using System.Web.Mvc;
+using SystemHealthExternalInterface;
 using HealthAndAuditShared;
 using Microsoft.WindowsAzure.Storage.Table;
 

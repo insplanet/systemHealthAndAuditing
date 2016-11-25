@@ -9,11 +9,26 @@
 *																						*
 *	Contributors: Mikael Axblom															*
 *****************************************************************************************/
-namespace HealthAndAuditShared
-{
-    public interface IOperationResultChannel
-    {
-        void ReportOperationResult(SystemEvent opResult);
 
+using System;
+using System.Reflection;
+
+namespace SystemHealthExternalInterface
+{
+    [Serializable]
+    public class ApplicationInfo
+    {
+        public ApplicationInfo()
+        {
+            ApplicationName = AppDomain.CurrentDomain.FriendlyName;
+            ApplicationVersion = Assembly.GetExecutingAssembly().GetName().Version;
+        }
+        public ApplicationInfo(string applicatioName)
+        {
+            ApplicationName = applicatioName;
+        }
+        public string ApplicationName { get; set; }
+        public string ApplicationLocation {get; set;}
+        public Version ApplicationVersion { get; set; }
     }
 }

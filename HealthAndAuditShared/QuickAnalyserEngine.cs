@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using SystemHealthExternalInterface;
 
 namespace HealthAndAuditShared
 {
@@ -75,7 +76,7 @@ namespace HealthAndAuditShared
         private ConcurrentDictionary<string, ProgramAnalyser> Analysers { get; } = new ConcurrentDictionary<string, ProgramAnalyser>();
 
         /// <summary>
-        /// Adds a list of <see cref="SystemEvent"/>s to main queue of the engine.
+        /// Adds a list of <see cref="SystemHealthExternalInterface.SystemEvent"/>s to main queue of the engine.
         /// </summary>
         /// <param name="results">The results.</param>
         public async Task AddToMainQueue(List<SystemEvent> results)
