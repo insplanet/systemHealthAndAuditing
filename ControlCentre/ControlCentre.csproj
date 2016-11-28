@@ -186,6 +186,10 @@
       <Project>{6773a1f2-b994-4ecb-b762-694deb1974ba}</Project>
       <Name>HealthAndAuditShared</Name>
     </ProjectReference>
+    <ProjectReference Include="..\SystemHealthExternalInterface\SystemHealthExternalInterface.csproj">
+      <Project>{ffe7d5e0-4198-4db7-b7e7-c2c8ff4ed7fe}</Project>
+      <Name>SystemHealthExternalInterface</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Content Include="Views\UpsertRule\ruleview.cshtml" />

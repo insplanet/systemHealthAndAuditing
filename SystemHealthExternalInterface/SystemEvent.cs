@@ -9,6 +9,7 @@
 *																						*
 *	Contributors: Mikael Axblom															*
 *****************************************************************************************/
+
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -16,13 +17,13 @@ using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 using Newtonsoft.Json;
 
-namespace HealthAndAuditShared
+namespace SystemHealthExternalInterface
 {
     [Serializable]
-    public class OperationResult : TableEntity
+    public class SystemEvent : TableEntity
     {
-        public OperationResult() { }
-        public OperationResult(OpResult result)
+        public SystemEvent() { }
+        public SystemEvent(OperationResult result)
         {
             Result = result;
             AppInfo = new ApplicationInfo();
@@ -30,7 +31,7 @@ namespace HealthAndAuditShared
             PartitionKey = string.IsNullOrWhiteSpace(AppInfo?.ApplicationName) ? "Unkown application" : AppInfo.ApplicationName;
         }
 
-        public enum OpResult
+        public enum OperationResult
         {
             Success,
             Failure
@@ -54,7 +55,7 @@ namespace HealthAndAuditShared
         }
 
         public DateTime TimeStampUtc { get; set; } = DateTime.UtcNow;
-        public OpResult Result { get; set; }
+        public OperationResult Result { get; set; }
         public string OperationName { get; set; }
         public Exception CaughtException { get; set; }
         public Dictionary<string, object> OperationParameters { get; set; }

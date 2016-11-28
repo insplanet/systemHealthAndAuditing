@@ -10,6 +10,7 @@
 *	Contributors: Mikael Axblom, Fredrik Lindgren										*
 *****************************************************************************************/
 
+using System.Configuration;
 using HealthAndAuditShared;
 using Microsoft.Azure.WebJobs;
 
@@ -24,9 +25,9 @@ namespace AlarmSender
         {
         
             Functions.ChannelHolder = new AlarmChannelHolder();
-            
+            Functions.ChannelHolder.AddChannel(AlarmLevel.High, new SlackClient(ConfigurationManager.AppSettings["SlackHook"]));
             Functions.FloodControl = new FloodControl(Functions.ChannelHolder,true);
-
+            
 
             JobHostConfiguration config = new JobHostConfiguration();
             config.UseServiceBus();

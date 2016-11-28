@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using SystemHealthExternalInterface;
 using HealthAndAuditShared;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -13,7 +14,7 @@ namespace RuleTests
         [TestMethod]
         public void TestAllFail()
         {
-            var fail = new OperationResult(OperationResult.OpResult.Failure);
+            var fail = new SystemEvent(SystemEvent.OperationResult.Failure);
             Rule.MinimumAmountOfOperationsBeforeRuleCanBeTriggered = 4;
             Assert.IsFalse(Rule.AddAndCheckIfTriggered(fail));
             Assert.IsFalse(Rule.AddAndCheckIfTriggered(fail));
@@ -23,8 +24,8 @@ namespace RuleTests
         [TestMethod]
         public void TestExactPercentFail()
         {
-            var fail = new OperationResult(OperationResult.OpResult.Failure);
-            var success = new OperationResult(OperationResult.OpResult.Success);
+            var fail = new SystemEvent(SystemEvent.OperationResult.Failure);
+            var success = new SystemEvent(SystemEvent.OperationResult.Success);
             Rule.MinimumAmountOfOperationsBeforeRuleCanBeTriggered = 4;
             Assert.IsFalse(Rule.AddAndCheckIfTriggered(fail));
             Assert.IsFalse(Rule.AddAndCheckIfTriggered(fail));
@@ -34,8 +35,8 @@ namespace RuleTests
         [TestMethod]
         public void TesPercentFailSuccess()
         {
-            var fail = new OperationResult(OperationResult.OpResult.Failure);
-            var success = new OperationResult(OperationResult.OpResult.Success);
+            var fail = new SystemEvent(SystemEvent.OperationResult.Failure);
+            var success = new SystemEvent(SystemEvent.OperationResult.Success);
             Rule.MinimumAmountOfOperationsBeforeRuleCanBeTriggered = 4;
             Assert.IsFalse(Rule.AddAndCheckIfTriggered(fail));
             Assert.IsFalse(Rule.AddAndCheckIfTriggered(success));
@@ -45,8 +46,8 @@ namespace RuleTests
         [TestMethod]
         public void TestLongFlow()
         {
-            var fail = new OperationResult(OperationResult.OpResult.Failure);
-            var success = new OperationResult(OperationResult.OpResult.Success);
+            var fail = new SystemEvent(SystemEvent.OperationResult.Failure);
+            var success = new SystemEvent(SystemEvent.OperationResult.Success);
 
             Rule.MinimumAmountOfOperationsBeforeRuleCanBeTriggered = 4;
 

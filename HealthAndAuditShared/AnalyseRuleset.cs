@@ -12,6 +12,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using SystemHealthExternalInterface;
 
 namespace HealthAndAuditShared
 {
@@ -43,7 +44,7 @@ namespace HealthAndAuditShared
         /// </summary>
         /// <param name="opResult">The event.</param>
         /// <returns>true if rule is triggered</returns>
-        public abstract bool AddAndCheckIfTriggered(OperationResult opResult);
+        public abstract bool AddAndCheckIfTriggered(SystemEvent opResult);
     }
 
     /// <summary>
@@ -54,9 +55,9 @@ namespace HealthAndAuditShared
     {
         public uint MaxTimesFailureAllowed { get; set; }
         private Queue<DateTime> Failures { get; } = new Queue<DateTime>();
-        public override bool AddAndCheckIfTriggered(OperationResult opResult)
+        public override bool AddAndCheckIfTriggered(SystemEvent opResult)
         {
-            if(opResult.Result != OperationResult.OpResult.Failure)
+            if(opResult.Result != SystemEvent.OperationResult.Failure)
             {
                 return false;
             }
@@ -85,7 +86,7 @@ namespace HealthAndAuditShared
         private Queue<DateTime> Successes { get; } = new Queue<DateTime>();
         private Queue<DateTime> Failures { get; } = new Queue<DateTime>();
 
-        public override bool AddAndCheckIfTriggered(OperationResult opResult)
+        public override bool AddAndCheckIfTriggered(SystemEvent opResult)
         {
             while (Successes.Any() && Successes.Peek() <= DateTime.UtcNow)
             {
@@ -97,10 +98,10 @@ namespace HealthAndAuditShared
             }
             switch (opResult.Result)
             {
-                case OperationResult.OpResult.Success:
+                case SystemEvent.OperationResult.Success:
                     Successes.Enqueue(DateTime.UtcNow + KeepOperationInPileTime);
                     break;
-                case OperationResult.OpResult.Failure:
+                case SystemEvent.OperationResult.Failure:
                     Failures.Enqueue(DateTime.UtcNow + KeepOperationInPileTime);
                     break;
                 default:
@@ -129,7 +130,7 @@ namespace HealthAndAuditShared
         public string StartOperationName { get; set; }
         public string EndOperationName { get; set; }
         private DateTime? LastOperationTime { get; set; }
-        public override bool AddAndCheckIfTriggered(OperationResult opResult)
+        public override bool AddAndCheckIfTriggered(SystemEvent opResult)
         {
             throw new NotImplementedException();
             //todo
@@ -175,7 +176,7 @@ namespace HealthAndAuditShared
 
     public class ScriptRule : AnalyseRuleset
     {
-        public override bool AddAndCheckIfTriggered(OperationResult opResult)
+        public override bool AddAndCheckIfTriggered(SystemEvent opResult)
         {
             throw new NotImplementedException();
         }

@@ -9,10 +9,11 @@
 *																						*
 *	Contributors: Mikael Axblom															*
 *****************************************************************************************/
+
 using System;
 using System.Reflection;
 
-namespace HealthAndAuditShared
+namespace SystemHealthExternalInterface
 {
     [Serializable]
     public class ApplicationInfo

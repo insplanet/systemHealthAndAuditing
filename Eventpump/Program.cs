@@ -17,6 +17,7 @@ using System.Linq.Expressions;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using SystemHealthExternalInterface;
 using HealthAndAuditShared;
 using Microsoft.ServiceBus.Messaging;
 using Newtonsoft.Json;
@@ -35,10 +36,12 @@ namespace Eventpump
 
             try
             {
-                var eventhubclient = EventHubClient.CreateFromConnectionString(ConfigurationManager.AppSettings["Microsoft.ServiceBus.ConnectionString.Send"]);
+                var reporter = new EventReporter(ConfigurationManager.AppSettings["Microsoft.ServiceBus.ConnectionString.Send"], ConfigurationManager.AppSettings["EventHubPath"]);
+
+                
                 var t = 0;
                 var innerCounter = 0;
-                var edatalist = new List<EventData>();
+                var edatalist = new List<SystemEvent>();
 
                 WriteLine("Generating first eventbatch...");
                 while(true)
@@ -52,7 +55,8 @@ namespace Eventpump
                             //WriteLine($"Skickar {innerCounter - 1} events.");
                             innerCounter = 0;
                             ReadLine();
-                            eventhubclient.SendBatch(edatalist);
+                            //eventhubclient.SendBatch(edatalist);
+                            reporter.ReportEventBatchAsync(edatalist).Wait();
                             edatalist.Clear();
                             WriteLine("Sent.");
                             WriteLine("Generating new eventbatch...");
@@ -62,7 +66,7 @@ namespace Eventpump
 
 
 
-                        var opres = new OperationResult(OperationResult.OpResult.Failure);
+                        var opres = new SystemEvent(SystemEvent.OperationResult.Failure);
                         opres.OtherInfo = $"{t++}";
 
                         if(t%2 == 0)
@@ -84,11 +88,11 @@ namespace Eventpump
 
                         if(t%6 == 0)
                         {
-                            opres.Result = OperationResult.OpResult.Success;
+                            opres.Result = SystemEvent.OperationResult.Success;
                         }
                         else
                         {
-                            opres.Result = OperationResult.OpResult.Failure;
+                            opres.Result = SystemEvent.OperationResult.Failure;
                             opres.CaughtException = new NullReferenceException();
                             //string error = null;
                             //try
@@ -104,7 +108,7 @@ namespace Eventpump
                             //}
                             //catch(Exception ex)
                             //{
-                            //    opres.Result = OperationResult.OpResult.Failure;
+                            //    opres.Result = SystemEvent.OperationResult.Failure;
                             //    opres.CaughtException = ex;
                             //}
                         }
@@ -113,15 +117,22 @@ namespace Eventpump
 
                         var data = JsonConvert.SerializeObject(opres);
                         //WriteLine(data);
-                        var ed = new EventData();
-                        edatalist.Add(new EventData(Encoding.UTF8.GetBytes(data)));
+                        edatalist.Add(opres);
                         //eventhubclient.Send(new EventData(Encoding.UTF8.GetBytes(data)));
                         //Thread.Sleep(100);
                     }
-                    catch  { }
+                    catch(Exception ex)
+                    {
+                        WriteLine(ex.ToString());
+                        ReadLine();
+                    }
                 }
             }
-            catch {}
+            catch (Exception ex)
+            {
+                WriteLine(ex.ToString());
+                ReadLine();
+            }
 
         }
     }

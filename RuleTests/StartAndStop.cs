@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using SystemHealthExternalInterface;
 using HealthAndAuditShared;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -17,7 +18,7 @@ namespace RuleTests
         public void TestWithOneOperation()
         {
             Rule.OperationName = "one";
-            var operation = new OperationResult(OperationResult.OpResult.Success);
+            var operation = new SystemEvent(SystemEvent.OperationResult.Success);
             operation.OperationName = "one";
             Assert.IsFalse(Rule.AddAndCheckIfTriggered(operation));
             Assert.IsFalse(Rule.AddAndCheckIfTriggered(operation));
@@ -33,10 +34,10 @@ namespace RuleTests
             Rule.OperationName = null;
             Rule.StartOperationName = StartName;
             Rule.EndOperationName = EndName;
-            var startOp = new OperationResult(OperationResult.OpResult.Success);
+            var startOp = new SystemEvent(SystemEvent.OperationResult.Success);
             startOp.OperationName = StartName;
 
-            var endOp = new OperationResult(OperationResult.OpResult.Success);
+            var endOp = new SystemEvent(SystemEvent.OperationResult.Success);
             endOp.OperationName = EndName;
 
             Assert.IsTrue(Rule.AddAndCheckIfTriggered(endOp));

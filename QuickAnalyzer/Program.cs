@@ -18,6 +18,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using SystemHealthExternalInterface;
 using HealthAndAuditShared;
 using Microsoft.Azure;
 using Microsoft.ServiceBus;
@@ -51,7 +52,7 @@ namespace QuickAnalyzer
             Engine = new AnalyserEngine();
             ServiceBusConnectionStringBuilder builder = new ServiceBusConnectionStringBuilder(eventhubConnS);
             builder.TransportType = TransportType.Amqp;
-            var connection = new EventHubSenderAndProcessor(null, builder.ToString(), eventhubpath);
+            var connection = new EventHubProcessor(builder.ToString(), eventhubpath);
             WriteLine("Starting event receiver.");
             var recTask = connection.StartReceiver<EventProc>(storageConnection);
             recTask.Wait();
@@ -110,7 +111,7 @@ namespace QuickAnalyzer
 
             public async Task ProcessEventsAsync(PartitionContext context, IEnumerable<EventData> messages)
             {
-                var parsedData = messages.Select(eventData => Encoding.UTF8.GetString(eventData.GetBytes())).Select(JsonConvert.DeserializeObject<OperationResult>).ToList();
+                var parsedData = messages.Select(eventData => Encoding.UTF8.GetString(eventData.GetBytes())).Select(JsonConvert.DeserializeObject<SystemEvent>).ToList();
                 await Engine.AddToMainQueue(parsedData);
                 var batches = new Dictionary<string, TableBatchOperation>();
                 var batchNames = new Dictionary<string, string>();

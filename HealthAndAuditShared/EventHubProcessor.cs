@@ -12,34 +12,21 @@
 using System;
 using System.Text;
 using System.Threading.Tasks;
+using SystemHealthExternalInterface;
 using Microsoft.ServiceBus.Messaging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
 namespace HealthAndAuditShared
 {
-    public class EventHubSenderAndProcessor : IOperationResultChannel
+    public class EventHubProcessor 
     {
-        public string Send_EventHubConnectionstring { get; set; }
         public string Listen_EventHubConnectionstring { get; set; }
         private string EventHubPath { get; }
-        public EventHubSenderAndProcessor(string sendConnectionstring, string listenConnectionstring, string eventHubPath)
+        public EventHubProcessor( string listenConnectionstring, string eventHubPath)
         {
-            Send_EventHubConnectionstring = sendConnectionstring;
             Listen_EventHubConnectionstring = listenConnectionstring;
             EventHubPath = eventHubPath;
-        }
-        public void ReportOperationResult(OperationResult opResult)
-        {
-            if(string.IsNullOrWhiteSpace(Send_EventHubConnectionstring))
-            {
-                throw new ArgumentNullException(nameof(Send_EventHubConnectionstring));
-            }
-            var settings = new JsonSerializerSettings();
-            settings.Converters.Add(new StringEnumConverter { CamelCaseText = true });
-            var eventhubclient = EventHubClient.CreateFromConnectionString(Send_EventHubConnectionstring, EventHubPath);
-            var data = JsonConvert.SerializeObject(opResult, settings);
-            eventhubclient.Send(new EventData(Encoding.UTF8.GetBytes(data)));
         }
         public Task StartReceiver<T>(string storageConnection) where T: IEventProcessor
         {
