@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using SystemHealthExternalInterface;
+using Newtonsoft.Json;
 
 namespace HealthAndAuditShared
 {
@@ -21,6 +22,8 @@ namespace HealthAndAuditShared
     /// </summary>
     public abstract class AnalyseRuleset
     {
+        [JsonProperty(PropertyName = "id")]
+        internal string RuleID { get; set; }
         public string ApplicationName { get; set; }
         /// <summary>
         /// Gets or sets the name of the operation to be analysed. Leave null or empty to catch all operations in program.

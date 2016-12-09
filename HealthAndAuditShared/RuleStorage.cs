@@ -18,21 +18,11 @@ namespace HealthAndAuditShared
     {
         List<AnalyseRuleset> GetAllRuleSets();
         List<AnalyseRuleset> GetRuleSetsForApplication(string applicationName);
+        void SaveRuleSet(AnalyseRuleset ruleset);
+        void DeleteRuleSet(AnalyseRuleset ruleset);
     }
 
-    public class DocStorageAzure : IRuleStorage
-    {
-        public List<AnalyseRuleset> GetAllRuleSets()
-        {
-            throw new NotImplementedException();
-        }
-
-        public List<AnalyseRuleset> GetRuleSetsForApplication(string applicationName)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
+  
 
     public class TestRuleStorage : IRuleStorage
     {
@@ -53,9 +43,18 @@ namespace HealthAndAuditShared
             return list;
         }
 
-        
+        public void SaveRuleSet(AnalyseRuleset ruleset)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void DeleteRuleSet(AnalyseRuleset ruleset)
+        {
+            throw new NotImplementedException();
+        }
     }
 
 
 
 }
+
