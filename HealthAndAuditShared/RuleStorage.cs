@@ -11,6 +11,7 @@
 *****************************************************************************************/
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace HealthAndAuditShared
 {
@@ -18,7 +19,7 @@ namespace HealthAndAuditShared
     {
         List<AnalyseRuleset> GetAllRuleSets();
         List<AnalyseRuleset> GetRuleSetsForApplication(string applicationName);
-        void SaveRuleSet(AnalyseRuleset ruleset);
+        Task UpsertRuleSetAsync(AnalyseRuleset ruleset);
         void DeleteRuleSet(AnalyseRuleset ruleset);
     }
 
@@ -43,7 +44,7 @@ namespace HealthAndAuditShared
             return list;
         }
 
-        public void SaveRuleSet(AnalyseRuleset ruleset)
+        public Task UpsertRuleSetAsync(AnalyseRuleset ruleset)
         {
             throw new NotImplementedException();
         }

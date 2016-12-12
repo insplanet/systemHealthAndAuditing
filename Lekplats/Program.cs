@@ -18,9 +18,19 @@ namespace Lekplats
             
             var docdb = new DocumentDBRuleStorage(ConfigurationManager.AppSettings["EndPointUrl"], ConfigurationManager.AppSettings["AuthorizationKey"],ConfigurationManager.AppSettings["RuleDatabaseId"],ConfigurationManager.AppSettings["RuleCollectionId"]);
 
+            var ruleset = new MaxAmountOfFailuresRule();
+            ruleset.ApplicationName = "test";
+            ruleset.MaxTimesFailureAllowed = 30;
+            ruleset.OperationName = "test33";
 
+            docdb.UpsertRuleSetAsync(ruleset).Wait();
+
+
+            var result = docdb.GetAllRuleSets();
+
+            var f = 99;
 
         }
-    }
+}
 
 }

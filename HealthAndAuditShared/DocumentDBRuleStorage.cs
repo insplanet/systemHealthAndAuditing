@@ -1,6 +1,8 @@
 ﻿using System;
 using Microsoft.Azure.Documents.Client;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace HealthAndAuditShared
 {
@@ -17,16 +19,37 @@ namespace HealthAndAuditShared
         }
         public List<AnalyseRuleset> GetAllRuleSets()
         {
-            var all = Client.ReadDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(DatabaseName, CollectionName));
-            throw new System.NotImplementedException();
+            var query = Client.CreateDocumentQuery(UriFactory.CreateDocumentCollectionUri(DatabaseName, CollectionName));
+
+            var t = query.ToList();
+
+            foreach(var document in t)
+            {
+                var d = document;
+            }
+
+            return null; // GetListFromQuery(query);
         }
         public List<AnalyseRuleset> GetRuleSetsForApplication(string applicationName)
         {
-            throw new System.NotImplementedException();
+            var query = Client.CreateDocumentQuery<AnalyseRuleset>(UriFactory.CreateDocumentCollectionUri(DatabaseName, CollectionName)).Where(d => d.ApplicationName == applicationName);
+            return GetListFromQuery(query);
         }
-        public void SaveRuleSet(AnalyseRuleset ruleset)
+
+        private static List<AnalyseRuleset> GetListFromQuery(IQueryable<AnalyseRuleset> query)
         {
-            Client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(DatabaseName, CollectionName), ruleset);
+            var returnList = new List<AnalyseRuleset>();
+            
+            foreach (var analyseRuleset in query)
+            {
+                returnList.Add(analyseRuleset);
+            }
+            return returnList;
+        }
+
+        public async Task UpsertRuleSetAsync(AnalyseRuleset ruleset)
+        {
+            await Client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(DatabaseName, CollectionName), ruleset);
         }
 
         public void DeleteRuleSet(AnalyseRuleset ruleset)
