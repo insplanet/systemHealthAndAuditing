@@ -20,11 +20,19 @@ namespace Lekplats
 
             var ruleset = new MaxAmountOfFailuresRule();
             ruleset.ApplicationName = "test";
-            ruleset.MaxTimesFailureAllowed = 30;
+            ruleset.MaxTimesFailureAllowed = 4;
             ruleset.OperationName = "test33";
+            ruleset.RuleName = "amount4";
+
+            var rs = new FailurePercentRule();
+            rs.ApplicationName = "test";
+            rs.MaxFailurePercent = 22;
+            rs.OperationName = "test33";
+            rs.RuleName = "percent22";
+
 
             docdb.UpsertRuleSetAsync(ruleset).Wait();
-
+            docdb.UpsertRuleSetAsync(rs).Wait();
 
             var result = docdb.GetAllRuleSets();
 

@@ -4,8 +4,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
+
 namespace HealthAndAuditShared
 {
+    //todo. Automatic type detection when reading from db.
+
     public class DocumentDBRuleStorage : IRuleStorage
     {
         private string DatabaseName { get; }
@@ -19,39 +22,29 @@ namespace HealthAndAuditShared
         }
         public List<AnalyseRuleset> GetAllRuleSets()
         {
-            var query = Client.CreateDocumentQuery(UriFactory.CreateDocumentCollectionUri(DatabaseName, CollectionName));
-
-            var t = query.ToList();
-
-            foreach(var document in t)
-            {
-                var d = document;
-            }
-
-            return null; // GetListFromQuery(query);
+            var list = GetListFromQuery(GetRuleQueryFor<MaxAmountOfFailuresRule>());
+            list.AddRange(GetListFromQuery(GetRuleQueryFor<FailurePercentRule>()));
+            return list;
+        }
+        private IQueryable<T> GetRuleQueryFor<T>() where T : AnalyseRuleset
+        {
+            return Client.CreateDocumentQuery<T>(UriFactory.CreateDocumentCollectionUri(DatabaseName, CollectionName)).Where(d => d.RealType == typeof(T));
         }
         public List<AnalyseRuleset> GetRuleSetsForApplication(string applicationName)
         {
-            var query = Client.CreateDocumentQuery<AnalyseRuleset>(UriFactory.CreateDocumentCollectionUri(DatabaseName, CollectionName)).Where(d => d.ApplicationName == applicationName);
-            return GetListFromQuery(query);
+            var list = GetListFromQuery(GetRuleQueryFor<MaxAmountOfFailuresRule>().Where(d => d.ApplicationName == applicationName));
+            list.AddRange(GetListFromQuery(GetRuleQueryFor<FailurePercentRule>()).Where(d => d.ApplicationName == applicationName));
+            return list;
         }
-
-        private static List<AnalyseRuleset> GetListFromQuery(IQueryable<AnalyseRuleset> query)
+        private static List<AnalyseRuleset> GetListFromQuery(IEnumerable<AnalyseRuleset> query)
         {
-            var returnList = new List<AnalyseRuleset>();
-            
-            foreach (var analyseRuleset in query)
-            {
-                returnList.Add(analyseRuleset);
-            }
-            return returnList;
+            return query.ToList();
         }
 
         public async Task UpsertRuleSetAsync(AnalyseRuleset ruleset)
         {
             await Client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(DatabaseName, CollectionName), ruleset);
         }
-
         public void DeleteRuleSet(AnalyseRuleset ruleset)
         {
             throw new NotImplementedException();

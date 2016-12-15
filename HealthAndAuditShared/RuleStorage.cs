@@ -41,6 +41,14 @@ namespace HealthAndAuditShared
             rules.MaxTimesFailureAllowed = 10;
             var list = new List<AnalyseRuleset>();
             list.Add(rules);
+
+            var rs = new FailurePercentRule();
+            rs.ApplicationName = "Eventpump.vshost.exe";
+            rs.RuleName = "TestRule002";
+            rs.KeepOperationInPileTime = new TimeSpan(0, 30, 0);
+            rs.MaxFailurePercent = 80;
+            list.Add(rs);
+
             return list;
         }
 

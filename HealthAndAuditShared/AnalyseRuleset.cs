@@ -22,6 +22,12 @@ namespace HealthAndAuditShared
     /// </summary>
     public abstract class AnalyseRuleset
     {
+        protected AnalyseRuleset()
+        {
+            RealType = GetType();
+        }
+
+        public Type RealType { get; set; }
         [JsonProperty(PropertyName = "id")]
         internal string RuleID { get; set; }
         public string ApplicationName { get; set; }
