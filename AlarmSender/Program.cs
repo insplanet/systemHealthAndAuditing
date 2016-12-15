@@ -12,6 +12,7 @@
 
 using System.Configuration;
 using HealthAndAuditShared;
+using Microsoft.Azure;
 using Microsoft.Azure.WebJobs;
 
 namespace AlarmSender
@@ -25,7 +26,7 @@ namespace AlarmSender
         {
         
             Functions.ChannelHolder = new AlarmChannelHolder();
-            Functions.ChannelHolder.AddChannel(AlarmLevel.High, new SlackClient(ConfigurationManager.AppSettings["SlackHook"]));
+            Functions.ChannelHolder.AddChannel(AlarmLevel.High, new SlackClient(CloudConfigurationManager.GetSetting("SlackHook")));
             Functions.FloodControl = new FloodControl(Functions.ChannelHolder,true);
             
 

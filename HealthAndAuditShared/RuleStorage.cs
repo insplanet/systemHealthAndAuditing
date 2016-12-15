@@ -11,6 +11,7 @@
 *****************************************************************************************/
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace HealthAndAuditShared
 {
@@ -18,21 +19,11 @@ namespace HealthAndAuditShared
     {
         List<AnalyseRuleset> GetAllRuleSets();
         List<AnalyseRuleset> GetRuleSetsForApplication(string applicationName);
+        Task UpsertRuleSetAsync(AnalyseRuleset ruleset);
+        void DeleteRuleSet(AnalyseRuleset ruleset);
     }
 
-    public class DocStorageAzure : IRuleStorage
-    {
-        public List<AnalyseRuleset> GetAllRuleSets()
-        {
-            throw new NotImplementedException();
-        }
-
-        public List<AnalyseRuleset> GetRuleSetsForApplication(string applicationName)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
+  
 
     public class TestRuleStorage : IRuleStorage
     {
@@ -50,12 +41,30 @@ namespace HealthAndAuditShared
             rules.MaxTimesFailureAllowed = 10;
             var list = new List<AnalyseRuleset>();
             list.Add(rules);
+
+            var rs = new FailurePercentRule();
+            rs.ApplicationName = "Eventpump.vshost.exe";
+            rs.RuleName = "TestRule002";
+            rs.KeepOperationInPileTime = new TimeSpan(0, 30, 0);
+            rs.MaxFailurePercent = 80;
+            rs.MinimumAmountOfOperationsBeforeRuleCanBeTriggered = 20;
+            list.Add(rs);
+
             return list;
         }
 
-        
+        public Task UpsertRuleSetAsync(AnalyseRuleset ruleset)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void DeleteRuleSet(AnalyseRuleset ruleset)
+        {
+            throw new NotImplementedException();
+        }
     }
 
 
 
 }
+

@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using SystemHealthExternalInterface;
+using Newtonsoft.Json;
 
 namespace HealthAndAuditShared
 {
@@ -21,13 +22,18 @@ namespace HealthAndAuditShared
     /// </summary>
     public abstract class AnalyseRuleset
     {
+        protected AnalyseRuleset()
+        {
+            RealType = GetType();
+        }
+
+        public Type RealType { get; set; }
+        [JsonProperty(PropertyName = "id")]
+        internal string RuleID { get; set; }
         public string ApplicationName { get; set; }
         /// <summary>
         /// Gets or sets the name of the operation to be analysed. Leave null or empty to catch all operations in program.
         /// </summary>
-        /// <value>
-        /// The name of the operation.
-        /// </value>
         public string OperationName { get; set; }
         public string RuleName { get; set; }
         public AlarmLevel AlarmLevel { get; set; } = AlarmLevel.Low;
@@ -35,14 +41,11 @@ namespace HealthAndAuditShared
         /// <summary>
         /// Gets or sets the time the operation will be used in the analysis. After that time it is dequeued and will no longer affect the analysis.
         /// </summary>
-        /// <value>
-        /// The keep operation in pile time.
-        /// </value>
         public TimeSpan KeepOperationInPileTime { get; set; } = new TimeSpan(1, 0, 0);
+
         /// <summary>
         /// Adds an event and analyses current events.
         /// </summary>
-        /// <param name="opResult">The event.</param>
         /// <returns>true if rule is triggered</returns>
         public abstract bool AddAndCheckIfTriggered(SystemEvent opResult);
     }
