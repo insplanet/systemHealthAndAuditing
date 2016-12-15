@@ -47,6 +47,7 @@ namespace HealthAndAuditShared
             rs.RuleName = "TestRule002";
             rs.KeepOperationInPileTime = new TimeSpan(0, 30, 0);
             rs.MaxFailurePercent = 80;
+            rs.MinimumAmountOfOperationsBeforeRuleCanBeTriggered = 20;
             list.Add(rs);
 
             return list;

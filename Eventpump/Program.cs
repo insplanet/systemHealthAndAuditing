@@ -50,11 +50,12 @@ namespace Eventpump
                     {
                         if(innerCounter++ == 20)
                         {
-                            Clear();
+                            
                             WriteLine($"Enter för att skicka {innerCounter - 1} events.");
                             //WriteLine($"Skickar {innerCounter - 1} events.");
                             innerCounter = 0;
                             ReadLine();
+                            Clear();
                             //eventhubclient.SendBatch(edatalist);
                             reporter.ReportEventBatchAsync(edatalist).Wait();
                             edatalist.Clear();

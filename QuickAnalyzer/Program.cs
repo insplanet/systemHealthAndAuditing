@@ -49,6 +49,7 @@ namespace QuickAnalyzer
 
             var alarmQueue = new ServiceBusConnection<AlarmMessage>(alarmQueueConnS, alarmQueueName);
             var alarmManger = new AlarmMessageManager(alarmQueue);
+            var ruleStorage = new DocumentDBRuleStorage(ConfigurationManager.AppSettings["EndPointUrl"], ConfigurationManager.AppSettings["AuthorizationKey"], ConfigurationManager.AppSettings["RuleDatabaseId"], ConfigurationManager.AppSettings["RuleCollectionId"]);
             Engine = new AnalyserEngine();
             ServiceBusConnectionStringBuilder builder = new ServiceBusConnectionStringBuilder(eventhubConnS);
             builder.TransportType = TransportType.Amqp;
@@ -65,7 +66,7 @@ namespace QuickAnalyzer
                 {
                     if(!Engine.EngineIsRunning)
                     {
-                        Engine.StartEngine(new TestRuleStorage(), alarmManger);
+                        Engine.StartEngine(ruleStorage, alarmManger);
                         if(maxEngineRestarts <= engineStartCounter++)
                         {
                             var alarm = new AlarmMessage(AlarmLevel.High, AppDomain.CurrentDomain.FriendlyName, $"AnalyserEngine main task has been restared {engineStartCounter -1} times. Engine is down and can not recover! Resetting start counter.");

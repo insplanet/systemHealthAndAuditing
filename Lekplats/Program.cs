@@ -18,23 +18,25 @@ namespace Lekplats
             
             var docdb = new DocumentDBRuleStorage(ConfigurationManager.AppSettings["EndPointUrl"], ConfigurationManager.AppSettings["AuthorizationKey"],ConfigurationManager.AppSettings["RuleDatabaseId"],ConfigurationManager.AppSettings["RuleCollectionId"]);
 
-            var ruleset = new MaxAmountOfFailuresRule();
-            ruleset.ApplicationName = "test";
-            ruleset.MaxTimesFailureAllowed = 4;
-            ruleset.OperationName = "test33";
-            ruleset.RuleName = "amount4";
+            var rules = new MaxAmountOfFailuresRule();
+            rules.ApplicationName = "Eventpump.vshost.exe";
+            rules.RuleName = "TestRule001";
+            rules.KeepOperationInPileTime = new TimeSpan(0, 30, 0);
+            rules.MaxTimesFailureAllowed = 10;
+          
 
             var rs = new FailurePercentRule();
-            rs.ApplicationName = "test";
-            rs.MaxFailurePercent = 22;
-            rs.OperationName = "test33";
-            rs.RuleName = "percent22";
+            rs.ApplicationName = "Eventpump.vshost.exe";
+            rs.RuleName = "TestRule002";
+            rs.KeepOperationInPileTime = new TimeSpan(0, 30, 0);
+            rs.MaxFailurePercent = 80;
+            rs.MinimumAmountOfOperationsBeforeRuleCanBeTriggered = 20;
 
 
-            docdb.UpsertRuleSetAsync(ruleset).Wait();
+            docdb.UpsertRuleSetAsync(rules).Wait();
             docdb.UpsertRuleSetAsync(rs).Wait();
 
-            var result = docdb.GetAllRuleSets();
+            
 
             var f = 99;
 
