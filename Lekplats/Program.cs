@@ -16,7 +16,7 @@ namespace Lekplats
         static void Main(string[] args)
         {
             
-            var docdb = new DocumentDBRuleStorage(ConfigurationManager.AppSettings["EndPointUrl"], ConfigurationManager.AppSettings["AuthorizationKey"],ConfigurationManager.AppSettings["RuleDatabaseId"],ConfigurationManager.AppSettings["RuleCollectionId"]);
+            var docdb = new DocumentDBRuleStorage(ConfigurationManager.AppSettings["DocDBEndPointUrl"], ConfigurationManager.AppSettings["AuthorizationKey"],ConfigurationManager.AppSettings["RuleDatabaseId"],ConfigurationManager.AppSettings["RuleCollectionId"]);
 
             var rules = new MaxAmountOfFailuresRule();
             rules.ApplicationName = "Eventpump.vshost.exe";
@@ -32,9 +32,7 @@ namespace Lekplats
             rs.MaxFailurePercent = 80;
             rs.MinimumAmountOfOperationsBeforeRuleCanBeTriggered = 20;
 
-
-            docdb.UpsertRuleSetAsync(rules).Wait();
-            docdb.UpsertRuleSetAsync(rs).Wait();
+            
 
             
 

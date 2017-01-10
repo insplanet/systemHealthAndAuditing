@@ -19,7 +19,7 @@ namespace HealthAndAuditShared
     {
         List<AnalyseRuleset> GetAllRuleSets();
         List<AnalyseRuleset> GetRuleSetsForApplication(string applicationName);
-        Task UpsertRuleSetAsync(AnalyseRuleset ruleset);
+        void UpsertRuleSet(AnalyseRuleset ruleset);
         void DeleteRuleSet(AnalyseRuleset ruleset);
     }
 
@@ -53,7 +53,7 @@ namespace HealthAndAuditShared
             return list;
         }
 
-        public Task UpsertRuleSetAsync(AnalyseRuleset ruleset)
+        public void UpsertRuleSet(AnalyseRuleset ruleset)
         {
             throw new NotImplementedException();
         }
