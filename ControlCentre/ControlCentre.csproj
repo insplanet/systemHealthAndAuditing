@@ -147,7 +147,7 @@
     <Compile Include="App_Start\BundleConfig.cs" />
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
-    <Compile Include="Controllers\HomeController.cs" />
+    <Compile Include="Controllers\OperationController.cs" />
     <Compile Include="Controllers\ListRulesController.cs" />
     <Compile Include="Controllers\UpsertRuleController.cs" />
     <Compile Include="Global.asax.cs">

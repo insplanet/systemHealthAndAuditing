@@ -7,9 +7,9 @@
 <h2>ListAll</h2>
 
 @{
-    foreach(var analyseRuleset in Model)
+    foreach(var analyseRuleset in Model.OrderBy(x => x.ApplicationName))
     {
-        <div>@analyseRuleset.RuleName  <a href="/upsertrule/viewrule/@analyseRuleset.RuleID">Open</a></div>
+        <div>@analyseRuleset.ApplicationName : @analyseRuleset.RuleName  <a href="/upsertrule/viewrule/@analyseRuleset.RuleID">Open</a></div>
 
     }
 }

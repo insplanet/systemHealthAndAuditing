@@ -33,9 +33,29 @@ namespace ControlCentre.Controllers
             ViewBag.documentid = id;
 
             AnalyseRuleset rule;
+            ViewBag.buttonText = "Update";
             return GetRule(id, out rule) ? View("ruleview", rule) : View("ruleview");
 
         }
+
+        [HttpGet]
+        public ActionResult CreateNew(string type)
+        {
+            AnalyseRuleset rule = null;
+            if (type.ToLowerInvariant() == "maxtimes")
+            {
+                rule = new MaxAmountOfFailuresRule();
+            }
+            else if(type.ToLowerInvariant() == "percent")
+            {
+                rule = new FailurePercentRule();
+            }
+            ViewBag.buttonText = "Insert";
+            
+            return View("ruleview", rule);
+
+        }
+
 
         [HttpPost]
         [ActionName("upsert")]

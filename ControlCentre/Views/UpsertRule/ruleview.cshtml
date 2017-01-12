@@ -20,7 +20,11 @@
 </head>
 <body>
     <div style="margin: 20px;">
-        <h2>ruleview</h2>
+        <h2>Upsert</h2>
+        <p>
+            <a href="/upsertrule/CreateNew?type=maxtimes">New MaxTimes</a>
+            <a href="/upsertrule/CreateNew?type=percent">New Percent</a>
+        </p>
         @using (Html.BeginForm("upsert", "UpsertRule", FormMethod.Post, new { }))
         {
             if (Model != null)
@@ -30,7 +34,9 @@
                 </div>
                 <textarea name="serializedRule" style="margin: 0px; height: 300px; width: 500px;">@Html.Raw(JsonConvert.SerializeObject(Model).Replace(",\"", ",\r\n\""))</textarea>
             }
-            <input type="submit" value="Update rule" />
+            <div>
+                <input type="submit" value="@ViewBag.buttonText" />
+            </div>
         }
         <br />
         @if (ViewBag.pageException != null)
