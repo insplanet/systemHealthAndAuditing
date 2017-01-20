@@ -135,44 +135,63 @@ namespace HealthAndAuditShared
         private DateTime? LastOperationTime { get; set; }
         public override bool AddAndCheckIfTriggered(SystemEvent opResult)
         {
-            throw new NotImplementedException();
-            //todo
-            //start and end to be used
-            if (string.IsNullOrWhiteSpace(OperationName))
+            var retVal = false;
+
+            if (OperationName != null && opResult.OperationName == OperationName)
+                retVal = AddAndCheckIfTriggeredForSingleOperations();
+            else if (opResult.OperationName == StartOperationName)
+                retVal = AddAndCheckIfTriggeredForStartOperation();
+            else if (opResult.OperationName == EndOperationName)
+                retVal = AddAndCheckIfTriggeredForEndOperation();
+
+            return retVal;
+        }
+
+        private bool AddAndCheckIfTriggeredForEndOperation()
+        {
+            var retVal = false;
+            if (!LastOperationTime.HasValue)
             {
-                //Due to OperationName being null all operations will pass here, those that do not match start or end will be ignored.
-                if(opResult.OperationName != StartOperationName && opResult.OperationName != EndOperationName)
-                {
-                    return false;
-                }
-                if (LastOperationTime !=null && StartOperationName == opResult.OperationName)
-                {
-                    AlarmMessage = $"Start operation was succeeded by another start operation. OperationName: {StartOperationName}";
-                    LastOperationTime = null;
-                    return true;
-                }
-                if(LastOperationTime == null)
-                {
-                    if(opResult.OperationName == EndOperationName)
-                    {
-                        AlarmMessage = $"End operation recieved before start operation.  OperationName: {EndOperationName}";
-                        LastOperationTime = null;
-                        return true;
-                    }
-                }
+                AlarmMessage = $"End operation recieved before start operation.  OperationName: {EndOperationName}";
+                retVal = true;
             }
-            if (LastOperationTime == null)
+            else if (LastOperationTime.Value.Add(-KeepOperationInPileTime) > DateTime.UtcNow)
             {
-                LastOperationTime = DateTime.UtcNow;
+                AlarmMessage = $"Time between operations greater than or equal to {KeepOperationInPileTime}. {nameof(OperationName)}:  {OperationName ?? string.Empty}. {nameof(StartOperationName)}: {StartOperationName ?? string.Empty}. {nameof(EndOperationName)}: {EndOperationName ?? string.Empty}";
+                retVal = true;
+            }
+            LastOperationTime = null;
+            return retVal;
+        }
+
+
+        private bool AddAndCheckIfTriggeredForSingleOperations()
+        {
+            var previousOperationTime = LastOperationTime;
+            LastOperationTime = DateTime.UtcNow;
+
+            if (!previousOperationTime.HasValue)
                 return false;
-            }
-            if (LastOperationTime + KeepOperationInPileTime <= DateTime.UtcNow)
+
+            if (LastOperationTime.Value.Add(-KeepOperationInPileTime) > previousOperationTime.Value)
             {
-                LastOperationTime = null;
-                AlarmMessage = $"Time between operations greater than or equal to {KeepOperationInPileTime}. {nameof(OperationName)}:  {OperationName?? string.Empty}. {nameof(StartOperationName)}: {StartOperationName ?? string.Empty}. {nameof(EndOperationName)}: {EndOperationName ?? string.Empty}";
+                AlarmMessage = $"Time between operations greater than or equal to {KeepOperationInPileTime}. {nameof(OperationName)}:  {OperationName ?? string.Empty}. {nameof(StartOperationName)}: {StartOperationName ?? string.Empty}. {nameof(EndOperationName)}: {EndOperationName ?? string.Empty}";
                 return true;
             }
+
+            return false;
+        }
+
+        private bool AddAndCheckIfTriggeredForStartOperation()
+        {
+            var previousOperationTime = LastOperationTime;
             LastOperationTime = DateTime.UtcNow;
+
+            if (previousOperationTime.HasValue)
+            {
+                AlarmMessage = $"Start operation was succeeded by another start operation. OperationName: {StartOperationName}";
+                return true;
+            }
             return false;
         }
     }
