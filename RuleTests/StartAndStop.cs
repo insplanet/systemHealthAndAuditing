@@ -41,9 +41,20 @@ namespace RuleTests
             endOp.OperationName = EndName;
 
             Assert.IsTrue(Rule.AddAndCheckIfTriggered(endOp));
+        }
 
+        [TestMethod]
 
-
+        public void TestWithOneOperationThreeTimes()
+        {
+            Rule.OperationName = "one";
+            var operation = new SystemEvent(SystemEvent.OperationResult.Success);
+            operation.OperationName = "one";
+            Assert.IsFalse(Rule.AddAndCheckIfTriggered(operation));
+            Thread.Sleep(1000);
+            Assert.IsFalse(Rule.AddAndCheckIfTriggered(operation));
+            Thread.Sleep(9000);
+            Assert.IsTrue(Rule.AddAndCheckIfTriggered(operation));
         }
 
     }
