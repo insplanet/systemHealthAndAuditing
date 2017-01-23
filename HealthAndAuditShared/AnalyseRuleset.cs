@@ -11,9 +11,13 @@
 *****************************************************************************************/
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Threading;
+using System.Timers;
 using SystemHealthExternalInterface;
 using Newtonsoft.Json;
+using Timer = System.Timers.Timer;
 
 namespace HealthAndAuditShared
 {
@@ -130,21 +134,62 @@ namespace HealthAndAuditShared
     /// <seealso cref="HealthAndAuditShared.AnalyseRuleset" />
     public class TimeBetweenOperations : AnalyseRuleset
     {
+        private Timer _timer;
+        private bool _timePass;
+
         public string StartOperationName { get; set; }
         public string EndOperationName { get; set; }
         private DateTime? LastOperationTime { get; set; }
         public override bool AddAndCheckIfTriggered(SystemEvent opResult)
         {
-            var retVal = false;
+            var retVal = _timePass;
 
-            if (OperationName != null && opResult.OperationName == OperationName)
-                retVal = AddAndCheckIfTriggeredForSingleOperations();
-            else if (opResult.OperationName == StartOperationName)
-                retVal = AddAndCheckIfTriggeredForStartOperation();
-            else if (opResult.OperationName == EndOperationName)
-                retVal = AddAndCheckIfTriggeredForEndOperation();
+            if (!retVal)
+            {
+                if (OperationName != null && opResult.OperationName == OperationName)
+                    retVal = AddAndCheckIfTriggeredForSingleOperations();
+                else if (opResult.OperationName == StartOperationName)
+                    retVal = AddAndCheckIfTriggeredForStartOperation();
+                else if (opResult.OperationName == EndOperationName)
+                    retVal = AddAndCheckIfTriggeredForEndOperation();
+            }
+            else 
+            {
+                AlarmMessage = $"Time between operations greater than or equal to {KeepOperationInPileTime}. {nameof(OperationName)}:  {OperationName ?? string.Empty}. {nameof(StartOperationName)}: {StartOperationName ?? string.Empty}. {nameof(EndOperationName)}: {EndOperationName ?? string.Empty}";
+                if (opResult != null)
+                    End();
+            }
 
-            return retVal;
+            //Expected timelag before raising event
+            Thread.Sleep(20);
+            Debug.WriteLine($"RetVal : {retVal} / TimePass : {_timePass}");
+            return retVal || _timePass;
+        }
+
+
+
+
+        private bool AddAndCheckIfTriggeredForSingleOperations()
+        {
+            if (!LastOperationTime.HasValue)
+                Begin();
+            else
+                End();
+
+            return false;
+        }
+
+        private bool AddAndCheckIfTriggeredForStartOperation()
+        {
+            if (LastOperationTime.HasValue)
+            {
+                AlarmMessage = $"Start operation was succeeded by another start operation. OperationName: {StartOperationName}";
+                End();
+                return true;
+            }
+            Begin();
+
+            return false;
         }
 
         private bool AddAndCheckIfTriggeredForEndOperation()
@@ -155,44 +200,31 @@ namespace HealthAndAuditShared
                 AlarmMessage = $"End operation recieved before start operation.  OperationName: {EndOperationName}";
                 retVal = true;
             }
-            else if (LastOperationTime.Value.Add(-KeepOperationInPileTime) > DateTime.UtcNow)
-            {
-                AlarmMessage = $"Time between operations greater than or equal to {KeepOperationInPileTime}. {nameof(OperationName)}:  {OperationName ?? string.Empty}. {nameof(StartOperationName)}: {StartOperationName ?? string.Empty}. {nameof(EndOperationName)}: {EndOperationName ?? string.Empty}";
-                retVal = true;
-            }
-            LastOperationTime = null;
+            End();
+
             return retVal;
         }
 
-
-        private bool AddAndCheckIfTriggeredForSingleOperations()
+        private void Begin()
         {
-            var previousOperationTime = LastOperationTime;
             LastOperationTime = DateTime.UtcNow;
-
-            if (!previousOperationTime.HasValue)
-                return false;
-
-            if (LastOperationTime.Value.Add(-KeepOperationInPileTime) > previousOperationTime.Value)
-            {
-                AlarmMessage = $"Time between operations greater than or equal to {KeepOperationInPileTime}. {nameof(OperationName)}:  {OperationName ?? string.Empty}. {nameof(StartOperationName)}: {StartOperationName ?? string.Empty}. {nameof(EndOperationName)}: {EndOperationName ?? string.Empty}";
-                return true;
-            }
-
-            return false;
+            _timer = new Timer(KeepOperationInPileTime.TotalMilliseconds);
+            _timer.Enabled = true;
+            _timer.Elapsed += OnTimeout;
+            _timePass = false;
         }
 
-        private bool AddAndCheckIfTriggeredForStartOperation()
+        private void End()
         {
-            var previousOperationTime = LastOperationTime;
-            LastOperationTime = DateTime.UtcNow;
+            _timer?.Stop();
+            LastOperationTime = null;
+            _timePass = false;
+        }
 
-            if (previousOperationTime.HasValue)
-            {
-                AlarmMessage = $"Start operation was succeeded by another start operation. OperationName: {StartOperationName}";
-                return true;
-            }
-            return false;
+        private void OnTimeout(object sender, ElapsedEventArgs elapsedEventArgs)
+        {
+            _timePass = true;
+            AddAndCheckIfTriggered(null);
         }
     }
 

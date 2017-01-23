@@ -44,18 +44,59 @@ namespace RuleTests
         }
 
         [TestMethod]
-
-        public void TestWithOneOperationThreeTimes()
+        public void TestIfLastOperationIsRunnedBeforeFirst()
         {
-            Rule.OperationName = "one";
-            var operation = new SystemEvent(SystemEvent.OperationResult.Success);
-            operation.OperationName = "one";
-            Assert.IsFalse(Rule.AddAndCheckIfTriggered(operation));
-            Thread.Sleep(1000);
-            Assert.IsFalse(Rule.AddAndCheckIfTriggered(operation));
-            Thread.Sleep(9000);
-            Assert.IsTrue(Rule.AddAndCheckIfTriggered(operation));
+            Rule.OperationName = null;
+            Rule.StartOperationName = StartName;
+            Rule.EndOperationName = EndName;
+            var endOp = new SystemEvent(SystemEvent.OperationResult.Success);
+            endOp.OperationName = EndName;
+            Assert.IsTrue(Rule.AddAndCheckIfTriggered(endOp));
         }
 
+        [TestMethod]
+        public void TestIfFirstOperationIsRunnedTwoTimesInARow()
+        {
+            Rule.OperationName = null;
+            Rule.StartOperationName = StartName;
+            Rule.EndOperationName = EndName;
+            var startOp = new SystemEvent(SystemEvent.OperationResult.Success);
+            startOp.OperationName = StartName;
+            Assert.IsFalse(Rule.AddAndCheckIfTriggered(startOp));
+            Assert.IsTrue(Rule.AddAndCheckIfTriggered(startOp));
+        }
+
+        [TestMethod]
+        public void TestIfTimeBetweenOperationsIsBelowTimeout()
+        {
+            Rule.OperationName = null;
+            Rule.StartOperationName = StartName;
+            Rule.EndOperationName = EndName;
+            var startOp = new SystemEvent(SystemEvent.OperationResult.Success);
+            startOp.OperationName = StartName;
+            var endOp = new SystemEvent(SystemEvent.OperationResult.Success);
+            endOp.OperationName = EndName;
+            Assert.IsFalse(Rule.AddAndCheckIfTriggered(startOp));
+            Thread.Sleep(6000);
+            Assert.IsFalse(Rule.AddAndCheckIfTriggered(endOp));
+            Assert.IsFalse(Rule.AddAndCheckIfTriggered(startOp));
+            Thread.Sleep(4500);
+            Assert.IsFalse(Rule.AddAndCheckIfTriggered(endOp));
+        }
+
+        [TestMethod]
+        public void TestIfTimeBetweenOperationsExceedsTimeout()
+        {
+            Rule.OperationName = null;
+            Rule.StartOperationName = StartName;
+            Rule.EndOperationName = EndName;
+            var startOp = new SystemEvent(SystemEvent.OperationResult.Success);
+            startOp.OperationName = StartName;
+            var endOp = new SystemEvent(SystemEvent.OperationResult.Success);
+            endOp.OperationName = EndName;
+            Assert.IsFalse(Rule.AddAndCheckIfTriggered(startOp));
+            Thread.Sleep(9000);
+            Assert.IsTrue(Rule.AddAndCheckIfTriggered(endOp));
+        }
     }
 }
