@@ -2,6 +2,7 @@
 using System.Threading;
 using SystemHealthExternalInterface;
 using HealthAndAuditShared;
+using HealthAndAuditShared.Fakes;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace RuleTests
@@ -97,6 +98,19 @@ namespace RuleTests
             Assert.IsFalse(Rule.AddAndCheckIfTriggered(startOp));
             Thread.Sleep(9000);
             Assert.IsTrue(Rule.AddAndCheckIfTriggered(endOp));
+        }
+
+        [TestMethod]
+        public void TestIfUpdateIsInvoked()
+        {
+            Rule.OperationName = "one";
+            var operation = new SystemEvent(SystemEvent.OperationResult.Success);
+            var fakeObserver = new FakeTimeBetweenOperationsObserver();
+            Rule.AttachObserver(fakeObserver);
+            Assert.IsFalse(Rule.AddAndCheckIfTriggered(operation));
+            Assert.IsFalse(fakeObserver.IsInvoked);
+            Thread.Sleep(10000);
+            Assert.IsTrue(fakeObserver.IsInvoked);
         }
     }
 }

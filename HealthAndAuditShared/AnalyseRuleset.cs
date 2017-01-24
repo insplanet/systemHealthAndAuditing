@@ -16,6 +16,7 @@ using System.Linq;
 using System.Threading;
 using System.Timers;
 using SystemHealthExternalInterface;
+using HealthAndAuditShared.Observers;
 using Newtonsoft.Json;
 using Timer = System.Timers.Timer;
 
@@ -136,10 +137,36 @@ namespace HealthAndAuditShared
     {
         private Timer _timer;
         private bool _timePass;
+        private List<ITimeBetweenOperationsObserver> _observers;
 
         public string StartOperationName { get; set; }
         public string EndOperationName { get; set; }
         private DateTime? LastOperationTime { get; set; }
+
+        private List<ITimeBetweenOperationsObserver> Observers
+        {
+            get { return _observers = _observers ?? new List<ITimeBetweenOperationsObserver>(); }
+            set { _observers = value; }
+        }
+        
+
+        public TimeBetweenOperations()
+        {
+        }
+
+        public TimeBetweenOperations(ITimeBetweenOperationsObserver observer)
+        {
+        }
+
+        public void AttachObserver(ITimeBetweenOperationsObserver observer)
+            => Observers.Add(observer);
+
+        public void NotifyObservers()
+        {
+            foreach (var observer in Observers)
+                observer.Update(this);
+        }
+
         public override bool AddAndCheckIfTriggered(SystemEvent opResult)
         {
             var retVal = _timePass;
@@ -162,7 +189,6 @@ namespace HealthAndAuditShared
 
             //Expected timelag before raising event
             Thread.Sleep(20);
-            Debug.WriteLine($"RetVal : {retVal} / TimePass : {_timePass}");
             return retVal || _timePass;
         }
 
@@ -224,7 +250,7 @@ namespace HealthAndAuditShared
         private void OnTimeout(object sender, ElapsedEventArgs elapsedEventArgs)
         {
             _timePass = true;
-            AddAndCheckIfTriggered(null);
+            NotifyObservers();
         }
     }
 
