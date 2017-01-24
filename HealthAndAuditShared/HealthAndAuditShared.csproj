@@ -94,7 +94,9 @@
     <Compile Include="AzureStorageManager.cs" />
     <Compile Include="DocumentDBRuleStorage.cs" />
     <Compile Include="EventHubProcessor.cs" />
+    <Compile Include="Fakes\FakeTimeBetweenOperationsObserver.cs" />
     <Compile Include="MessageAggregator.cs" />
+    <Compile Include="Observers\ITimeBetweenOperationsObserver.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QuickAnalyserEngine.cs" />
     <Compile Include="AlarmChannels\SlackClient.cs" />

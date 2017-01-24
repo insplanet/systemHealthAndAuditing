@@ -16,6 +16,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using SystemHealthExternalInterface;
+using HealthAndAuditShared.Observers;
 
 namespace HealthAndAuditShared
 {
@@ -170,11 +171,17 @@ namespace HealthAndAuditShared
         /// <summary>
         /// Holds the <see cref="AnalyseRuleset"/>s to analyse one program. Starts its own task to run analyses.
         /// </summary>
-        private class ProgramAnalyser
+        private class ProgramAnalyser : ITimeBetweenOperationsObserver
         {
             public ProgramAnalyser(AlarmMessageManager alarmMessageManager)
             {
                 AlarmMessageManager = alarmMessageManager;
+
+                foreach (var ruleSet in RuleSets.Where(x => x.Value is TimeBetweenOperations))
+                {
+                    var realRuleSet = (TimeBetweenOperations) ruleSet.Value;
+                    realRuleSet.AttachObserver(this);
+                }
             }
             public string ProgramName { get; set; }
             private AlarmMessageManager AlarmMessageManager { get; }
@@ -233,6 +240,24 @@ namespace HealthAndAuditShared
                     throw new ArgumentException($"This instance of {nameof(ProgramAnalyser)} is analysing {ProgramName}. Can not add ruleset for {ruleset.ApplicationName}.");
                 }
                 RuleSets.AddOrUpdate(ruleset.RuleName, ruleset, (key, oldValue) => ruleset);
+            }
+
+            public void Update(TimeBetweenOperations rule)
+            {
+                var operationName = string.IsNullOrWhiteSpace(rule.OperationName)
+                    ? rule.EndOperationName
+                    : rule.OperationName;
+
+                var fromQ = EventQueue.First(x => x.OperationName == operationName);
+
+                if (rule.AddAndCheckIfTriggered(null))
+                {
+                    var msg = new AlarmMessage(rule.AlarmLevel, fromQ.AppInfo.ApplicationName, $"Rule {rule.RuleName} triggered. Message: {rule.AlarmMessage}", fromQ.CaughtException.Message, fromQ.ID);
+                    AlarmMessageManager.RaiseAlarm(msg);
+#if DEBUG
+                    Debug.WriteLine($"ALARM! {rule.AlarmLevel} level. From {fromQ.AppInfo.ApplicationName}. Message: {rule.AlarmMessage}");
+#endif
+                }
             }
         }
     }

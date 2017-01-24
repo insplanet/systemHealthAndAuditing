@@ -11,9 +11,14 @@
 *****************************************************************************************/
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Threading;
+using System.Timers;
 using SystemHealthExternalInterface;
+using HealthAndAuditShared.Observers;
 using Newtonsoft.Json;
+using Timer = System.Timers.Timer;
 
 namespace HealthAndAuditShared
 {
@@ -130,50 +135,122 @@ namespace HealthAndAuditShared
     /// <seealso cref="HealthAndAuditShared.AnalyseRuleset" />
     public class TimeBetweenOperations : AnalyseRuleset
     {
+        private Timer _timer;
+        private bool _timePass;
+        private List<ITimeBetweenOperationsObserver> _observers;
+
         public string StartOperationName { get; set; }
         public string EndOperationName { get; set; }
         private DateTime? LastOperationTime { get; set; }
+
+        private List<ITimeBetweenOperationsObserver> Observers
+        {
+            get { return _observers = _observers ?? new List<ITimeBetweenOperationsObserver>(); }
+            set { _observers = value; }
+        }
+        
+
+        public TimeBetweenOperations()
+        {
+        }
+
+        public TimeBetweenOperations(ITimeBetweenOperationsObserver observer)
+        {
+        }
+
+        public void AttachObserver(ITimeBetweenOperationsObserver observer)
+            => Observers.Add(observer);
+
+        public void NotifyObservers()
+        {
+            foreach (var observer in Observers)
+                observer.Update(this);
+        }
+
         public override bool AddAndCheckIfTriggered(SystemEvent opResult)
         {
-            throw new NotImplementedException();
-            //todo
-            //start and end to be used
-            if (string.IsNullOrWhiteSpace(OperationName))
+            var retVal = _timePass;
+
+            if (!retVal)
             {
-                //Due to OperationName being null all operations will pass here, those that do not match start or end will be ignored.
-                if(opResult.OperationName != StartOperationName && opResult.OperationName != EndOperationName)
-                {
-                    return false;
-                }
-                if (LastOperationTime !=null && StartOperationName == opResult.OperationName)
-                {
-                    AlarmMessage = $"Start operation was succeeded by another start operation. OperationName: {StartOperationName}";
-                    LastOperationTime = null;
-                    return true;
-                }
-                if(LastOperationTime == null)
-                {
-                    if(opResult.OperationName == EndOperationName)
-                    {
-                        AlarmMessage = $"End operation recieved before start operation.  OperationName: {EndOperationName}";
-                        LastOperationTime = null;
-                        return true;
-                    }
-                }
+                if (OperationName != null && opResult.OperationName == OperationName)
+                    retVal = AddAndCheckIfTriggeredForSingleOperations();
+                else if (opResult.OperationName == StartOperationName)
+                    retVal = AddAndCheckIfTriggeredForStartOperation();
+                else if (opResult.OperationName == EndOperationName)
+                    retVal = AddAndCheckIfTriggeredForEndOperation();
             }
-            if (LastOperationTime == null)
+            else 
             {
-                LastOperationTime = DateTime.UtcNow;
-                return false;
+                AlarmMessage = $"Time between operations greater than or equal to {KeepOperationInPileTime}. {nameof(OperationName)}:  {OperationName ?? string.Empty}. {nameof(StartOperationName)}: {StartOperationName ?? string.Empty}. {nameof(EndOperationName)}: {EndOperationName ?? string.Empty}";
+                if (opResult != null)
+                    End();
             }
-            if (LastOperationTime + KeepOperationInPileTime <= DateTime.UtcNow)
+
+            //Expected timelag before raising event
+            Thread.Sleep(20);
+            return retVal || _timePass;
+        }
+
+
+
+
+        private bool AddAndCheckIfTriggeredForSingleOperations()
+        {
+            if (!LastOperationTime.HasValue)
+                Begin();
+            else
+                End();
+
+            return false;
+        }
+
+        private bool AddAndCheckIfTriggeredForStartOperation()
+        {
+            if (LastOperationTime.HasValue)
             {
-                LastOperationTime = null;
-                AlarmMessage = $"Time between operations greater than or equal to {KeepOperationInPileTime}. {nameof(OperationName)}:  {OperationName?? string.Empty}. {nameof(StartOperationName)}: {StartOperationName ?? string.Empty}. {nameof(EndOperationName)}: {EndOperationName ?? string.Empty}";
+                AlarmMessage = $"Start operation was succeeded by another start operation. OperationName: {StartOperationName}";
+                End();
                 return true;
             }
-            LastOperationTime = DateTime.UtcNow;
+            Begin();
+
             return false;
+        }
+
+        private bool AddAndCheckIfTriggeredForEndOperation()
+        {
+            var retVal = false;
+            if (!LastOperationTime.HasValue)
+            {
+                AlarmMessage = $"End operation recieved before start operation.  OperationName: {EndOperationName}";
+                retVal = true;
+            }
+            End();
+
+            return retVal;
+        }
+
+        private void Begin()
+        {
+            LastOperationTime = DateTime.UtcNow;
+            _timer = new Timer(KeepOperationInPileTime.TotalMilliseconds);
+            _timer.Enabled = true;
+            _timer.Elapsed += OnTimeout;
+            _timePass = false;
+        }
+
+        private void End()
+        {
+            _timer?.Stop();
+            LastOperationTime = null;
+            _timePass = false;
+        }
+
+        private void OnTimeout(object sender, ElapsedEventArgs elapsedEventArgs)
+        {
+            _timePass = true;
+            NotifyObservers();
         }
     }
 
