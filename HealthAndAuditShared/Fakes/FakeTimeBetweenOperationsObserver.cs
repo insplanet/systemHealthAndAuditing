@@ -5,7 +5,7 @@ namespace HealthAndAuditShared.Fakes
     public class FakeTimeBetweenOperationsObserver : ITimeBetweenOperationsObserver
     {
         public bool IsInvoked { get; set; }
-        public void Update(TimeBetweenOperations rule)
+        public void RuleTriggeredByTimeout(TimeBetweenOperations rule)
         {
             IsInvoked = true;
         }

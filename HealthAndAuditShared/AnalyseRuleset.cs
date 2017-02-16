@@ -11,14 +11,11 @@
 *****************************************************************************************/
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Threading;
 using System.Timers;
 using SystemHealthExternalInterface;
 using HealthAndAuditShared.Observers;
 using Newtonsoft.Json;
-using Timer = System.Timers.Timer;
 
 namespace HealthAndAuditShared
 {
@@ -129,127 +126,105 @@ namespace HealthAndAuditShared
     }
 
     /// <summary>
-    /// Will check if time between operations is over allowed amount. To use with start and end operation variables, leave the <seealso cref="AnalyseRuleset.OperationName"/> null.
+    /// Will check if time between operations is taking too long. To use with start and end operation variables, leave the <seealso cref="AnalyseRuleset.OperationName"/> null.
     /// With start and end in use the rule will trigger if it takes too long between start and end OR if start is followed by another start OR if end is coming without a start first.
+    /// NOTE: an observer must be attached to this rule <see cref="ITimeBetweenOperationsObserver"/>
     /// </summary>
     /// <seealso cref="HealthAndAuditShared.AnalyseRuleset" />
     public class TimeBetweenOperations : AnalyseRuleset
     {
         private Timer _timer;
-        private bool _timePass;
         private List<ITimeBetweenOperationsObserver> _observers;
 
         public string StartOperationName { get; set; }
         public string EndOperationName { get; set; }
-        private DateTime? LastOperationTime { get; set; }
+        private bool StartOperationReceived { get; set; }
 
         private List<ITimeBetweenOperationsObserver> Observers
         {
             get { return _observers = _observers ?? new List<ITimeBetweenOperationsObserver>(); }
-            set { _observers = value; }
         }
-        
-
-        public TimeBetweenOperations()
-        {
-        }
-
-        public TimeBetweenOperations(ITimeBetweenOperationsObserver observer)
-        {
-        }
-
-        public void AttachObserver(ITimeBetweenOperationsObserver observer)
-            => Observers.Add(observer);
+        public void AttachObserver(ITimeBetweenOperationsObserver observer) => Observers.Add(observer);
 
         public void NotifyObservers()
         {
-            foreach (var observer in Observers)
-                observer.Update(this);
+            foreach(var observer in Observers)
+            {
+                observer.RuleTriggeredByTimeout(this);
+            }
         }
 
         public override bool AddAndCheckIfTriggered(SystemEvent opResult)
         {
-            var retVal = _timePass;
-
-            if (!retVal)
+            if(Observers.Count == 0)
             {
-                if (OperationName != null && opResult.OperationName == OperationName)
-                    retVal = AddAndCheckIfTriggeredForSingleOperations();
-                else if (opResult.OperationName == StartOperationName)
-                    retVal = AddAndCheckIfTriggeredForStartOperation();
-                else if (opResult.OperationName == EndOperationName)
-                    retVal = AddAndCheckIfTriggeredForEndOperation();
+                AlarmMessage = "No observers attached to rule. Rule can not let know when triggered through timeout.";
+                return true;
             }
-            else 
+            if(OperationName != null && opResult.OperationName == OperationName)
             {
-                AlarmMessage = $"Time between operations greater than or equal to {KeepOperationInPileTime}. {nameof(OperationName)}:  {OperationName ?? string.Empty}. {nameof(StartOperationName)}: {StartOperationName ?? string.Empty}. {nameof(EndOperationName)}: {EndOperationName ?? string.Empty}";
-                if (opResult != null)
-                    End();
+                AddSingleOperation();
+                return false;
             }
-
-            //Expected timelag before raising event
-            Thread.Sleep(20);
-            return retVal || _timePass;
+            if(opResult.OperationName == StartOperationName)
+            {
+                return AddAndCheckIfTriggeredForStartOperation();
+            }
+            if(opResult.OperationName == EndOperationName)
+            {
+                return  AddAndCheckIfTriggeredForEndOperation();
+            }
+            return false;
         }
 
-
-
-
-        private bool AddAndCheckIfTriggeredForSingleOperations()
+        private void AddSingleOperation()
         {
-            if (!LastOperationTime.HasValue)
-                Begin();
-            else
-                End();
-
-            return false;
+            StopTimer();
+            StartTimer();
         }
 
         private bool AddAndCheckIfTriggeredForStartOperation()
         {
-            if (LastOperationTime.HasValue)
+            if (StartOperationReceived)
             {
                 AlarmMessage = $"Start operation was succeeded by another start operation. OperationName: {StartOperationName}";
-                End();
+                StopTimer();
                 return true;
             }
-            Begin();
-
+            StartOperationReceived = true;
+            StartTimer();
             return false;
         }
 
         private bool AddAndCheckIfTriggeredForEndOperation()
         {
             var retVal = false;
-            if (!LastOperationTime.HasValue)
+            if (!StartOperationReceived)
             {
-                AlarmMessage = $"End operation recieved before start operation.  OperationName: {EndOperationName}";
+                AlarmMessage = $"End operation recieved before start operation. OperationName: {EndOperationName}";
                 retVal = true;
             }
-            End();
-
+            StartOperationReceived = false;
+            StopTimer();
             return retVal;
         }
 
-        private void Begin()
+        private void StartTimer()
         {
-            LastOperationTime = DateTime.UtcNow;
             _timer = new Timer(KeepOperationInPileTime.TotalMilliseconds);
             _timer.Enabled = true;
             _timer.Elapsed += OnTimeout;
-            _timePass = false;
         }
 
-        private void End()
+        private void StopTimer()
         {
             _timer?.Stop();
-            LastOperationTime = null;
-            _timePass = false;
         }
 
         private void OnTimeout(object sender, ElapsedEventArgs elapsedEventArgs)
         {
-            _timePass = true;
+            AlarmMessage = $"Time between operations greater than or equal to {KeepOperationInPileTime}. {nameof(OperationName)}:  {OperationName ?? string.Empty}. {nameof(StartOperationName)}: {StartOperationName ?? string.Empty}. {nameof(EndOperationName)}: {EndOperationName ?? string.Empty}";
+            StopTimer();
             NotifyObservers();
         }
     }

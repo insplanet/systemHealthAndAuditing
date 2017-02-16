@@ -2,6 +2,6 @@
 {
     public interface ITimeBetweenOperationsObserver
     {
-        void Update(TimeBetweenOperations rule);
+        void RuleTriggeredByTimeout(TimeBetweenOperations rule);
     }
 }

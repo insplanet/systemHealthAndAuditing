@@ -116,7 +116,7 @@ namespace HealthAndAuditShared
                                               const int tryUntil = 1000000;
                                               while (!Analysers.TryGetValue(fromQ.AppInfo.ApplicationName, out analyser))
                                               {
-                                                   //We don't want to get stuck here, so only try a limited large amount of times.
+                                                  //We don't want to get stuck here, so only try a limited large amount of times.
                                                   if (tryAmount++ > tryUntil)
                                                   {
                                                       break;
@@ -179,7 +179,7 @@ namespace HealthAndAuditShared
 
                 foreach (var ruleSet in RuleSets.Where(x => x.Value is TimeBetweenOperations))
                 {
-                    var realRuleSet = (TimeBetweenOperations) ruleSet.Value;
+                    var realRuleSet = (TimeBetweenOperations)ruleSet.Value;
                     realRuleSet.AttachObserver(this);
                 }
             }
@@ -222,7 +222,7 @@ namespace HealthAndAuditShared
                                    catch (Exception ex)
                                    {
                                        AnalyserIsRunning = false;
-                                       var msg = new AlarmMessage(AlarmLevel.Medium, AppDomain.CurrentDomain.FriendlyName, $"Exception in {nameof(ProgramAnalyser)}.{nameof(StartAnalyserTask)} for {ProgramName}.",ex.InnerException?.Message ?? ex.Message);
+                                       var msg = new AlarmMessage(AlarmLevel.Medium, AppDomain.CurrentDomain.FriendlyName, $"Exception in {nameof(ProgramAnalyser)}.{nameof(StartAnalyserTask)} for {ProgramName}.", ex.InnerException?.Message ?? ex.Message);
                                        AlarmMessageManager.RaiseAlarm(msg);
                                    }
                                }
@@ -242,22 +242,14 @@ namespace HealthAndAuditShared
                 RuleSets.AddOrUpdate(ruleset.RuleName, ruleset, (key, oldValue) => ruleset);
             }
 
-            public void Update(TimeBetweenOperations rule)
+            public void RuleTriggeredByTimeout(TimeBetweenOperations rule)
             {
-                var operationName = string.IsNullOrWhiteSpace(rule.OperationName)
-                    ? rule.EndOperationName
-                    : rule.OperationName;
-
-                var fromQ = EventQueue.First(x => x.OperationName == operationName);
-
-                if (rule.AddAndCheckIfTriggered(null))
-                {
-                    var msg = new AlarmMessage(rule.AlarmLevel, fromQ.AppInfo.ApplicationName, $"Rule {rule.RuleName} triggered. Message: {rule.AlarmMessage}", fromQ.CaughtException.Message, fromQ.ID);
-                    AlarmMessageManager.RaiseAlarm(msg);
+                var msg = new AlarmMessage(rule.AlarmLevel, rule.ApplicationName, $"Rule {rule.RuleName} triggered. Message: {rule.AlarmMessage}");
+                AlarmMessageManager.RaiseAlarm(msg);
 #if DEBUG
-                    Debug.WriteLine($"ALARM! {rule.AlarmLevel} level. From {fromQ.AppInfo.ApplicationName}. Message: {rule.AlarmMessage}");
+                Debug.WriteLine($"ALARM! {rule.AlarmLevel} level. From {rule.ApplicationName}. Message: {rule.AlarmMessage}");
 #endif
-                }
+
             }
         }
     }
