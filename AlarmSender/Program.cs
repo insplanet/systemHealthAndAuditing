@@ -10,7 +10,6 @@
 *	Contributors: Mikael Axblom, Fredrik Lindgren										*
 *****************************************************************************************/
 
-using System.Configuration;
 using HealthAndAuditShared;
 using Microsoft.Azure;
 using Microsoft.Azure.WebJobs;

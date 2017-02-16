@@ -13,7 +13,6 @@ using System;
 using Microsoft.Azure.Documents.Client;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Newtonsoft.Json;
 
 

@@ -10,12 +10,8 @@
 *	Contributors: Mikael Axblom															*
 *****************************************************************************************/
 using System;
-using System.Text;
 using System.Threading.Tasks;
-using SystemHealthExternalInterface;
 using Microsoft.ServiceBus.Messaging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 
 namespace HealthAndAuditShared
 {
