@@ -151,8 +151,6 @@
     <Compile Include="Controllers\OperationController.cs" />
     <Compile Include="Controllers\ListRulesController.cs" />
     <Compile Include="Controllers\UpsertRuleController.cs" />
-    <Compile Include="Filters\AddChallengeOnUnauthorizedResult.cs" />
-    <Compile Include="Filters\AuthenticationFailureResult.cs" />
     <Compile Include="Filters\BasicAutheticationFilter.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
