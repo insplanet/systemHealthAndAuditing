@@ -20,7 +20,7 @@ namespace ControlCentre.Controllers
 {
     public class OperationController : Controller
     {
-        // GET: Home
+        [HttpGet]
         public ActionResult Index()
         {
             return View("docview");

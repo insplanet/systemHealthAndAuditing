@@ -60,7 +60,6 @@ namespace ControlCentre
         /// Gets a dump of object information.
         /// Type of the object.
         /// Value of the object.
-        /// Will dig through <see cref="InspectedClassAttribute"/> marked classes. And report all of their <see cref="InspectorReportAttribute"/> marked properties.
         /// </summary>
         /// <param name="objects">Dictionary of objects with their names for Keys.</param>
         /// <returns>Formatted string with object information</returns>

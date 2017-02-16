@@ -12,14 +12,7 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using SystemHealthExternalInterface;
-using HealthAndAuditShared;
-using Microsoft.ServiceBus.Messaging;
 using Newtonsoft.Json;
 using static System.Console;
 
