@@ -1,7 +1,5 @@
 ﻿@model  SystemHealthExternalInterface.SystemEvent
-@{
-    Layout = null;
-}
+
 
 <!DOCTYPE html>
 
@@ -9,15 +7,7 @@
 <head>
     <meta name="viewport" content="width=device-width" />
     <title></title>
-    <style>
-        .code {
-            font-family: Consolas,Menlo,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New,monospace,sans-serif;
-            font-size: 13px;
-            background-color: #eff0f1;
-            padding: 4px;
-            border: 1px solid black;
-        }
-    </style>
+    <link rel="stylesheet" type="text/css" href="~/styles.css" />
     <script>
         function getDoc() {
             let inp = document.getElementById('docidinp');
@@ -26,11 +16,13 @@
     </script>
 </head>
 <body>
-    <div style="margin:20px;">
-        <div style="margin-bottom:20px;">
+    <h2>Error detail documents</h2>
+    <div style="margin: 20px;">
+
+        <div style="margin-bottom: 20px;">
             <input type="text" id="docidinp" value="@ViewBag.documentid" />&nbsp;<input type="button" onclick="getDoc();" value="Get document" />
         </div>
-        
+
         @if (Model != null)
         {
             <div>
@@ -41,11 +33,11 @@
                 Operation name: @Model.OperationName<br />
                 Operation result: @Model.Result<br />
                 Occured: @Model.TimeStampUtc (UTC)<br />
-                Other info: @Model.OtherInfo<br/>
+                Other info: @Model.OtherInfo<br />
                 @Html.Raw(ViewBag.objectDump)
             </div>
         }
-        <br/>
+        <br />
         @if (ViewBag.pageException != null)
         {
             <div class="code">

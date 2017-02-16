@@ -1,61 +1,16 @@
-﻿/****************************************************************************************
-*	This code originates from the software development department at					*
-*	swedish insurance and private loan broker Insplanet AB.								*
-*	Full license available in license.txt												*
-*	This text block may not be removed or altered.                                  	*
-*	The list of contributors may be extended.                                           *
-*																						*
-*							Mikael Axblom, head of software development, Insplanet AB	*
-*																						*
-*	Contributors: Mikael Axblom															*
-*****************************************************************************************/
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Text;
-using System.Web.Mvc;
-using SystemHealthExternalInterface;
 using HealthAndAuditShared;
-using Microsoft.WindowsAzure.Storage.Table;
 
-namespace ControlCentre.Controllers
+namespace ControlCentre
 {
-    public class OperationController : Controller
+    internal static class HelperMethods
     {
-        // GET: Home
-        public ActionResult Index()
+        public static DocumentDBRuleStorage GetRuleStorage()
         {
-            return View("docview");
-        }
-
-        [HttpGet]
-        public ActionResult ViewDoc(string id)
-        {
-            ViewBag.documentid = id;
-            SystemEvent opResult;
-            return GetDocument(id, out opResult) ? View("docview",opResult) : View("docview");
-        }
-
-        private bool GetDocument(string documentID, out SystemEvent systemEvent)
-        {
-            systemEvent = null;
-            try
-            {
-                var storageMan = new AzureStorageManager(ConfigurationManager.AppSettings["AzureStorageConnectionString"]);
-                var table = storageMan.GetTableReference(ConfigurationManager.AppSettings["TableName"]);
-                var splitID = SystemEvent.DecodeIDToPartitionAndRowKey(documentID);
-                var op = TableOperation.Retrieve<SystemEvent>(splitID.Item1, splitID.Item2);
-                var doc = table.Execute(op);
-                systemEvent = (SystemEvent)doc.Result;
-                ViewBag.pageException = FormatException(systemEvent.CaughtException);
-                ViewBag.objectDump = GetObjectDump(systemEvent.OperationParameters);
-                return true;
-            }
-            catch(Exception ex)
-            {
-                ViewBag.pageException = FormatException(ex);
-                return false;
-            }
+            return new DocumentDBRuleStorage(ConfigurationManager.AppSettings["DocDBEndPointUrl"], ConfigurationManager.AppSettings["AuthorizationKey"], ConfigurationManager.AppSettings["RuleDatabaseId"], ConfigurationManager.AppSettings["RuleCollectionId"]);
         }
 
 
@@ -68,9 +23,9 @@ namespace ControlCentre.Controllers
         /// </summary>
         /// <param name="ex">The exception to format.</param>
         /// <returns>A multi line string with the information we want from the exception.</returns>
-        private string FormatException(Exception ex)
+        public static string FormatException(Exception ex)
         {
-            if(ex == null)
+            if (ex == null)
             {
                 return "No exception.";
             }
@@ -95,9 +50,9 @@ namespace ControlCentre.Controllers
         /// </summary>
         /// <param name="stacktrace">The stacktrace.</param>
         /// <returns>Formated stacktrace</returns>
-        private string FormatStackTrace(string stacktrace)
+        private static string FormatStackTrace(string stacktrace)
         {
-            return stacktrace?.Replace(" at ","<br><br>at ").Replace(" in ", "<br>in ") ?? string.Empty;
+            return stacktrace?.Replace(" at ", "<br><br>at ").Replace(" in ", "<br>in ") ?? string.Empty;
         }
 
 
@@ -105,11 +60,10 @@ namespace ControlCentre.Controllers
         /// Gets a dump of object information.
         /// Type of the object.
         /// Value of the object.
-        /// Will dig through <see cref="InspectedClassAttribute"/> marked classes. And report all of their <see cref="InspectorReportAttribute"/> marked properties.
         /// </summary>
         /// <param name="objects">Dictionary of objects with their names for Keys.</param>
         /// <returns>Formatted string with object information</returns>
-        public string GetObjectDump(Dictionary<string, object> objects)
+        public static string GetObjectDump(Dictionary<string, object> objects)
         {
             if (objects == null)
             {

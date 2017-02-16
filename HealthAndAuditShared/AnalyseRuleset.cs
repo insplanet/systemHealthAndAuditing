@@ -31,7 +31,7 @@ namespace HealthAndAuditShared
 
         public Type RealType { get; set; }
         [JsonProperty(PropertyName = "id")]
-        internal string RuleID { get; set; }
+        public string RuleID { get; internal set; }
         public string ApplicationName { get; set; }
         /// <summary>
         /// Gets or sets the name of the operation to be analysed. Leave null or empty to catch all operations in program.

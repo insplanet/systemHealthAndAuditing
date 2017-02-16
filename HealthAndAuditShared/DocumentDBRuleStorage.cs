@@ -14,6 +14,7 @@ using Microsoft.Azure.Documents.Client;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 
 namespace HealthAndAuditShared
@@ -22,14 +23,16 @@ namespace HealthAndAuditShared
 
     public class DocumentDBRuleStorage : IRuleStorage
     {
+        private string EndpointUri { get; }
+        private string PrimaryKey { get; }
         private string DatabaseName { get; }
         private string CollectionName { get; }
-        private DocumentClient Client { get; }
         public DocumentDBRuleStorage(string endpointUri, string primaryKey, string database, string collection)
         {
-            Client = new DocumentClient(new Uri(endpointUri), primaryKey);
             DatabaseName = database;
             CollectionName = collection;
+            EndpointUri = endpointUri;
+            PrimaryKey = primaryKey;
         }
         public List<AnalyseRuleset> GetAllRuleSets()
         {
@@ -37,9 +40,22 @@ namespace HealthAndAuditShared
             list.AddRange(GetListFromQuery(GetRuleQueryFor<FailurePercentRule>()));
             return list;
         }
+        public AnalyseRuleset GetRuleByID(string id)
+        {
+            using(var client = new DocumentClient(new Uri(EndpointUri), PrimaryKey))
+            {
+                var document = client.ReadDocumentAsync(UriFactory.CreateDocumentUri(DatabaseName, CollectionName, id)).Result;
+                var type = document.Resource.GetPropertyValue<Type>("RealType");
+                var deseralized = JsonConvert.DeserializeObject(document.Resource.ToString(), type);
+                return deseralized as AnalyseRuleset;
+            }
+        }
         private IQueryable<T> GetRuleQueryFor<T>() where T : AnalyseRuleset
         {
-            return Client.CreateDocumentQuery<T>(UriFactory.CreateDocumentCollectionUri(DatabaseName, CollectionName)).Where(d => d.RealType == typeof(T));
+            using(var client = new DocumentClient(new Uri(EndpointUri), PrimaryKey))
+            {
+                return client.CreateDocumentQuery<T>(UriFactory.CreateDocumentCollectionUri(DatabaseName, CollectionName), new FeedOptions {EnableCrossPartitionQuery = false}).Where(d => d.RealType == typeof(T));
+            }
         }
         public List<AnalyseRuleset> GetRuleSetsForApplication(string applicationName)
         {
@@ -52,9 +68,12 @@ namespace HealthAndAuditShared
             return query.ToList();
         }
 
-        public async Task UpsertRuleSetAsync(AnalyseRuleset ruleset)
+        public void UpsertRuleSet(AnalyseRuleset ruleset)
         {
-            await Client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(DatabaseName, CollectionName), ruleset);
+            using(var client = new DocumentClient(new Uri(EndpointUri), PrimaryKey))
+            {
+                client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(DatabaseName, CollectionName), ruleset).Wait(5000);
+            }
         }
         public void DeleteRuleSet(AnalyseRuleset ruleset)
         {

@@ -1,0 +1,15 @@
+﻿@model List<HealthAndAuditShared.AnalyseRuleset>
+
+@{
+    ViewBag.Title = "ListAll";
+}
+
+<h2>ListAll</h2>
+
+@{
+    foreach(var analyseRuleset in Model.OrderBy(x => x.ApplicationName))
+    {
+        <div>@analyseRuleset.ApplicationName : @analyseRuleset.RuleName  <a href="/upsertrule/viewrule/@analyseRuleset.RuleID">Open</a></div>
+
+    }
+}
