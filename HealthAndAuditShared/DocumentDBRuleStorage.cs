@@ -33,48 +33,51 @@ namespace HealthAndAuditShared
             EndpointUri = endpointUri;
             PrimaryKey = primaryKey;
         }
-        public List<AnalyseRuleset> GetAllRuleSets()
+        public List<AnalyzeRule> GetAllRules()
         {
-            var list = GetListFromQuery(GetRuleQueryFor<MaxAmountOfFailuresRule>());
-            list.AddRange(GetListFromQuery(GetRuleQueryFor<FailurePercentRule>()));
-            return list;
+            using (var client = new DocumentClient(new Uri(EndpointUri), PrimaryKey))
+            {
+                var list = GetListFromQuery(GetRuleQueryFor<MaxAmountOfFailuresRule>(client));
+                list.AddRange(GetListFromQuery(GetRuleQueryFor<FailurePercentRule>(client)));
+                return list;
+            }            
         }
-        public AnalyseRuleset GetRuleByID(string id)
+        public AnalyzeRule GetRuleByID(string id)
         {
             using(var client = new DocumentClient(new Uri(EndpointUri), PrimaryKey))
             {
                 var document = client.ReadDocumentAsync(UriFactory.CreateDocumentUri(DatabaseName, CollectionName, id)).Result;
                 var type = document.Resource.GetPropertyValue<Type>("RealType");
                 var deseralized = JsonConvert.DeserializeObject(document.Resource.ToString(), type);
-                return deseralized as AnalyseRuleset;
+                return deseralized as AnalyzeRule;
             }
         }
-        private IQueryable<T> GetRuleQueryFor<T>() where T : AnalyseRuleset
+        private IQueryable<T> GetRuleQueryFor<T>(DocumentClient client) where T : AnalyzeRule
+        {          
+           return client.CreateDocumentQuery<T>(UriFactory.CreateDocumentCollectionUri(DatabaseName, CollectionName), new FeedOptions {EnableCrossPartitionQuery = false}).Where(d => d.RealType == typeof(T));          
+        }
+        public List<AnalyzeRule> GetRulesForApplication(string applicationName)
         {
-            using(var client = new DocumentClient(new Uri(EndpointUri), PrimaryKey))
+            using (var client = new DocumentClient(new Uri(EndpointUri), PrimaryKey))
             {
-                return client.CreateDocumentQuery<T>(UriFactory.CreateDocumentCollectionUri(DatabaseName, CollectionName), new FeedOptions {EnableCrossPartitionQuery = false}).Where(d => d.RealType == typeof(T));
+                var list = GetListFromQuery(GetRuleQueryFor<MaxAmountOfFailuresRule>(client).Where(d => d.ProgramName == applicationName));
+                list.AddRange(GetListFromQuery(GetRuleQueryFor<FailurePercentRule>(client)).Where(d => d.ProgramName == applicationName));
+                return list;
             }
         }
-        public List<AnalyseRuleset> GetRuleSetsForApplication(string applicationName)
-        {
-            var list = GetListFromQuery(GetRuleQueryFor<MaxAmountOfFailuresRule>().Where(d => d.ApplicationName == applicationName));
-            list.AddRange(GetListFromQuery(GetRuleQueryFor<FailurePercentRule>()).Where(d => d.ApplicationName == applicationName));
-            return list;
-        }
-        private static List<AnalyseRuleset> GetListFromQuery(IEnumerable<AnalyseRuleset> query)
+        private static List<AnalyzeRule> GetListFromQuery(IEnumerable<AnalyzeRule> query)
         {
             return query.ToList();
         }
 
-        public void UpsertRuleSet(AnalyseRuleset ruleset)
+        public void UpsertRuleSet(AnalyzeRule ruleset)
         {
             using(var client = new DocumentClient(new Uri(EndpointUri), PrimaryKey))
             {
                 client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(DatabaseName, CollectionName), ruleset).Wait(5000);
             }
         }
-        public void DeleteRuleSet(AnalyseRuleset ruleset)
+        public void DeleteRuleSet(AnalyzeRule ruleset)
         {
             throw new NotImplementedException();
         }

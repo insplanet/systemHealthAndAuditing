@@ -111,6 +111,7 @@
     <None Include="private.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="Properties\PublishProfiles\AlarmSender - FTP.pubxml" />
     <None Include="Properties\PublishProfiles\AlarmSender - Web Deploy %282%29.pubxml" />
     <None Include="Properties\PublishProfiles\AlarmSender - Web Deploy.pubxml" />
     <None Include="Properties\webjob-publish-settings.json" />

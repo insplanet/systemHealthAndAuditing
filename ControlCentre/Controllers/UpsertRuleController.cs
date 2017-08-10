@@ -32,7 +32,7 @@ namespace ControlCentre.Controllers
         {
             ViewBag.documentid = id;
 
-            AnalyseRuleset rule;
+            AnalyzeRule rule;
             ViewBag.buttonText = "Update";
             return GetRule(id, out rule) ? View("ruleview", rule) : View("ruleview");
 
@@ -41,7 +41,7 @@ namespace ControlCentre.Controllers
         [HttpGet]
         public ActionResult CreateNew(string type)
         {
-            AnalyseRuleset rule = null;
+            AnalyzeRule rule = null;
             if (type.ToLowerInvariant() == "maxtimes")
             {
                 rule = new MaxAmountOfFailuresRule();
@@ -66,9 +66,9 @@ namespace ControlCentre.Controllers
                 var typeCheckConvert = JsonConvert.DeserializeObject<Fuling>(serializedRule);
                 var realType = typeCheckConvert.RealType;
                 var deseralizedRule = JsonConvert.DeserializeObject(serializedRule, realType);
-                if(deseralizedRule is AnalyseRuleset)
+                if(deseralizedRule is AnalyzeRule)
                 {
-                    HelperMethods.GetRuleStorage().UpsertRuleSet(deseralizedRule as AnalyseRuleset);
+                    HelperMethods.GetRuleStorage().UpsertRuleSet(deseralizedRule as AnalyzeRule);
                 }
             }
             catch (Exception ex)
@@ -79,7 +79,7 @@ namespace ControlCentre.Controllers
         }
 
         //I need some way to get the real type from the ruleset, but since it's abstract this "pretty "little work-around is done.
-        private class Fuling : AnalyseRuleset
+        private class Fuling : AnalyzeRule
         {
             public override bool AddAndCheckIfTriggered(SystemEvent opResult)
             {
@@ -88,7 +88,7 @@ namespace ControlCentre.Controllers
         }
 
 
-        private bool GetRule(string ruleID, out AnalyseRuleset rule)
+        private bool GetRule(string ruleID, out AnalyzeRule rule)
         {
             rule = null;
             try

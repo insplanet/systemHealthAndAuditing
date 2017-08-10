@@ -33,8 +33,8 @@ namespace SystemHealthExternalInterface
 
         public enum OperationResult
         {
-            Success,
-            Failure
+            Failure,
+            Success            
         }
 
         public string ID
