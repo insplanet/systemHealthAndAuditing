@@ -79,7 +79,8 @@ namespace QuickAnalyzer
             var connection = new EventHubProcessor(builder.ToString(), Eventhubpath);
             WriteLineAndLog("Starting event receiver.");
             var recTask = connection.StartReceiver<EventProc>(storageConnection);
-            recTask.Wait();
+            recTask.Wait();            
+
             WriteLineAndLog("Receiver waiting.");
             var engineStartCounter = 0;
             var maxEngineRestarts = 10;
