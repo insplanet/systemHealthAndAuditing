@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -13,14 +14,14 @@ namespace HealthAndAuditShared
 {
     public class EventProcessor : IEventProcessor
     {
-        public static Dictionary<string, string> EventProcInfo { get;  } = new Dictionary<string, string>();
+        public static ConcurrentDictionary<string, string> EventProcInfo { get;  } = new ConcurrentDictionary<string, string>();
         private static FileLogger Logger { get; set; }
         private static AnalyzerEngine Engine { get; set; }
         private static string AzureStorageConnectionString { get; set; }
         private static string OperationStorageTableName { get; set; } 
         private static string TimeStampThis(string input)
         {
-            return $"{DateTime.Now} | {input}";
+            return $"\t{DateTime.Now}\t{input}";
         }
 
         private string id;
@@ -40,7 +41,7 @@ namespace HealthAndAuditShared
         public Task OpenAsync(PartitionContext context)
         {
             id = Guid.NewGuid().ToString();
-            EventProcInfo.Add(id, TimeStampThis("Open"));
+            EventProcInfo.TryAdd(id, TimeStampThis("Open"));
             return Task.FromResult<object>(null);
         }
 

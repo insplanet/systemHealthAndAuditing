@@ -25,18 +25,36 @@ namespace EngineControl
     {
         
         private  MessageAggregator<string> MessageAggregator { get; set; } = new MessageAggregator<string>();
-        private  ConcurrentQueue<string> MesseageOutputQueue { get; set; } = new ConcurrentQueue<string>();
+        public  ConcurrentQueue<string> MesseageOutputQueue { get; set; } = new ConcurrentQueue<string>();
         private FileLogger Logger { get; set; } = new FileLogger();
         public MainWindow(FileLogger logger)
         {
             Logger = logger;
             InitializeComponent();
-
+            
+            
             new Thread(() =>
             {
                 Thread.CurrentThread.IsBackground = true;
                 while (true)
                 {
+                    this.Dispatcher.Invoke(() =>
+                    {
+                        EngineStatus.Content = $"AnalyzerEngine for event hub {App.EventHubName} is: {(App.Engine.State)}";
+                    });
+
+                    this.Dispatcher.Invoke(() =>
+                    {
+                    var newText = "";
+                    foreach (var entry in EventProcessor.EventProcInfo)
+                    {
+                        newText += $"{entry.Key}: {entry.Value}{Environment.NewLine}";
+                    }
+                    EventProcStatus.Text = newText;
+
+                    });
+
+
                     MessageAggregator.Collection.Clear();
                     for (var i = 0; i < 500; ++i)
                     {
@@ -57,7 +75,7 @@ namespace EngineControl
                         {
                             this.Dispatcher.Invoke(() =>
                             {
-                                MessageBox.AppendText(message + Environment.NewLine);
+                                MessageBox.AppendText($"{DateTime.Now}\t{message}{Environment.NewLine}");
                             });
    
                             Logger.AddRow(message);
@@ -66,6 +84,29 @@ namespace EngineControl
                    
                 }
             }).Start();
+        }
+
+        private void Restart_Click(object sender, RoutedEventArgs e)
+        {
+            App.Engine.StopEngine();
+        }
+
+        protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+        {
+            if (App.Engine.EngineIsRunning)
+            {
+                e.Cancel = true;
+            }
+            
+            base.OnClosing(e);
+        }
+
+        private void Shutdown_Click(object sender, RoutedEventArgs e)
+        {
+            RestartButton.IsEnabled = false;
+            ShutDownButton.IsEnabled = false;
+            App.RunRestartLoop = false;
+            App.Engine.StopEngine();
         }
     }
 }

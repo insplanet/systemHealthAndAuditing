@@ -21,9 +21,13 @@ namespace EngineControl
 
         public static FileLogger Logger { get; set; } = new FileLogger();
         public static AnalyzerEngine Engine { get; set; }= new AnalyzerEngine();
+        public static bool RunRestartLoop { get; set; } = true;
+        public static string EventHubName { get; private set; }
 
         void App_Startup(object sender, StartupEventArgs e)
-        {                        
+        {
+            MainWindow mainWindow = new MainWindow(Logger);
+
             var storageConnection = ConfigurationManager.AppSettings["AzureStorageConnectionString"];
             ServiceBusConnectionStringBuilder builder = new ServiceBusConnectionStringBuilder(ConfigurationManager.AppSettings["Microsoft.ServiceBus.ConnectionString.Listen"]);
             
@@ -35,12 +39,13 @@ namespace EngineControl
             var alarmQueue = new ServiceBusConnection<AlarmMessage>(alarmQueueConnS, alarmQueueName);
             var alarmManger = new AlarmMessageManager(alarmQueue);
             var ruleStorage = new DocumentDBRuleStorage(ConfigurationManager.AppSettings["DocDBEndPointUrl"], ConfigurationManager.AppSettings["AuthorizationKey"], ConfigurationManager.AppSettings["RuleDatabaseId"], ConfigurationManager.AppSettings["RuleCollectionId"]);
+            EventHubName = ConfigurationManager.AppSettings["EventHubName"];
             var engineStartCounter = 0;
             var maxEngineRestarts = 10;
             new Thread(() =>
             {
-                Thread.CurrentThread.IsBackground = true;
-                while (true)
+                Thread.CurrentThread.IsBackground = true;                
+                while (RunRestartLoop)
                 {
                     if (Engine.State == State.ShuttingDown)
                     {
@@ -53,45 +58,40 @@ namespace EngineControl
                         {
                             var message = $"AnalyzerEngine main task has been restared {engineStartCounter - 1} times. Engine is down and can not recover! Resetting start counter.";
                             Logger.AddRow(message);
-                            //MesseageOutputQueue.Enqueue(message);
+                            mainWindow.MesseageOutputQueue.Enqueue(message);
                             var alarm = new AlarmMessage(AlarmLevel.High, AppDomain.CurrentDomain.FriendlyName, message);
                             alarmManger.RaiseAlarm(alarm);
                             engineStartCounter = 0;
                         }
+                        var timer = new Stopwatch();
+                        timer.Start();
+                        while (!Engine.EngineIsRunning && timer.ElapsedMilliseconds < 20000)
+                        {
+                            mainWindow.MesseageOutputQueue.Enqueue("Awaiting engine start. Waited " + timer.ElapsedMilliseconds + " ms");
+                            Thread.Sleep(1000);
+                        }
+                        timer.Reset();
                     }
-                    var timer = new Stopwatch();
-                    timer.Start();
-                    while (!Engine.EngineIsRunning && timer.ElapsedMilliseconds < 30000)
-                    {
-                        //MesseageOutputQueue.Enqueue("Awaiting engine start. Waited " + timer.ElapsedMilliseconds + " ms");
-                        Thread.Sleep(1000);
-                    }
-                    timer.Reset();
+                   
                 }
             }).Start();
-
-
+            
             new Thread(() =>
             {
                 Thread.CurrentThread.IsBackground = true;
-                var connection = new EventHubProcessor(builder.ToString(), ConfigurationManager.AppSettings["EventHubPath"]);
+                Thread.CurrentThread.Priority = ThreadPriority.Highest;
+                var connection = new EventHubProcessor(builder.ToString(), EventHubName);
                 var recTask = connection.StartReceiver<EventProcessor>(storageConnection);
                 EventProcessor.Init(Engine, Logger, storageConnection, ConfigurationManager.AppSettings["OperationStorageTable"]);
-
                 recTask.Wait();
             }).Start();
 
         
-
-            MainWindow mainWindow = new MainWindow(Logger);
-
-
             
             mainWindow.Show();
         }
-        
-        
 
+       
 
     }
 }

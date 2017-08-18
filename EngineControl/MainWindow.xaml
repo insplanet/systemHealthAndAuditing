@@ -5,10 +5,16 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:EngineControl"
         mc:Ignorable="d"
-        Title="MainWindow" Height="350" Width="725">
-    <Grid>
-        <TextBox x:Name="MessageBox" HorizontalAlignment="Left" Height="200" Margin="10,109,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="700" IsEnabled="False"/>
-        <Label Content="Messages" HorizontalAlignment="Left" Margin="10,83,0,0" VerticalAlignment="Top"/>
+        Title="Program event analyzer engine" Height="424.704" Width="966.155">
+    <Grid>       
+        <Label x:Name="EngineStatus" Content="EngineStatus" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Grid.ColumnSpan="2"/>
+        <Separator HorizontalAlignment="Left" Height="100" Margin="10,-22,0,0" VerticalAlignment="Top" Width="523" RenderTransformOrigin="0.364,0.323" Grid.ColumnSpan="2"/>
+        <Label Content="Eventprocessor status" HorizontalAlignment="Left" Margin="10,31,0,0" VerticalAlignment="Top" FontWeight="Bold" Grid.ColumnSpan="2"/>
+        <TextBlock x:Name="EventProcStatus" HorizontalAlignment="Left" Margin="10,57,0,0" TextWrapping="NoWrap" Text="Event processor not running." VerticalAlignment="Top" Height="68" Width="523" Grid.ColumnSpan="2"/>
+        <Label Content="Messages" HorizontalAlignment="Left" Margin="10,144,0,0" VerticalAlignment="Top" FontWeight="Bold" Grid.ColumnSpan="2"/>
+        <TextBox x:Name="MessageBox" TextBlock.LineHeight="18px" HorizontalAlignment="Left" Height="200" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Visible" Margin="10,170,0,0" TextWrapping="NoWrap"  VerticalAlignment="Top" Width="938" Grid.RowSpan="2" Grid.ColumnSpan="2" />
+        <Button x:Name="RestartButton" Content="Restart engine" HorizontalAlignment="Left" Margin="593,10,0,0" VerticalAlignment="Top" Width="95" Click="Restart_Click"/>
+        <Button x:Name="ShutDownButton" Content="Shutdown" HorizontalAlignment="Left" Margin="709,10,0,0" VerticalAlignment="Top" Width="75" Click="Shutdown_Click"/>
 
     </Grid>
 </Window>

@@ -145,7 +145,7 @@ namespace HealthAndAuditShared
             Task.Run(() =>
                           {
                               try
-                              {
+                              {                                  
                                   State = State.Running;
                                   AddMessage("Main engine Task started.");
                                   while (State == State.Running)
