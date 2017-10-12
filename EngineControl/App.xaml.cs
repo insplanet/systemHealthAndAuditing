@@ -24,9 +24,14 @@ namespace EngineControl
         public static bool RunRestartLoop { get; set; } = true;
         public static string EventHubName { get; private set; }
 
+        
+
         void App_Startup(object sender, StartupEventArgs e)
         {
             MainWindow mainWindow = new MainWindow(Logger);
+
+
+            mainWindow.SnapShotGenerator = new StatusSnapShotGenerator(ConfigurationManager.AppSettings["jsonPath"],Logger);
 
             var storageConnection = ConfigurationManager.AppSettings["AzureStorageConnectionString"];
             ServiceBusConnectionStringBuilder builder = new ServiceBusConnectionStringBuilder(ConfigurationManager.AppSettings["Microsoft.ServiceBus.ConnectionString.Listen"]);
@@ -42,9 +47,8 @@ namespace EngineControl
             EventHubName = ConfigurationManager.AppSettings["EventHubName"];
             var engineStartCounter = 0;
             var maxEngineRestarts = 10;
-            new Thread(() =>
+            Task.Run(() =>
             {
-                Thread.CurrentThread.IsBackground = true;                
                 while (RunRestartLoop)
                 {
                     if (Engine.State == State.ShuttingDown)
@@ -68,26 +72,22 @@ namespace EngineControl
                         while (!Engine.EngineIsRunning && timer.ElapsedMilliseconds < 20000)
                         {
                             mainWindow.MesseageOutputQueue.Enqueue("Awaiting engine start. Waited " + timer.ElapsedMilliseconds + " ms");
-                            Thread.Sleep(1000);
+                            Task.Delay(1000).Wait();
                         }
                         timer.Reset();
                     }
-                   
                 }
-            }).Start();
-            
-            new Thread(() =>
+            });
+
+            Task.Run(() =>
             {
-                Thread.CurrentThread.IsBackground = true;
-                Thread.CurrentThread.Priority = ThreadPriority.Highest;
                 var connection = new EventHubProcessor(builder.ToString(), EventHubName);
                 var recTask = connection.StartReceiver<EventProcessor>(storageConnection);
                 EventProcessor.Init(Engine, Logger, storageConnection, ConfigurationManager.AppSettings["OperationStorageTable"]);
                 recTask.Wait();
-            }).Start();
+            });
 
-        
-            
+            mainWindow.SnapShotGenerator.StartGenerator();
             mainWindow.Show();
         }
 

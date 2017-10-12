@@ -17,7 +17,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using SystemHealthExternalInterface;
 using HealthAndAuditShared.Observers;
-using System.Threading;
+
 
 namespace HealthAndAuditShared
 {
@@ -35,6 +35,17 @@ namespace HealthAndAuditShared
     {     
 
         public State State { get; private set; } = State.Stopped;
+
+        public delegate void StateChanged(State state);
+        public event StateChanged OnStateChanged;
+
+        private void ChangeState(State newState)
+        {
+            State = newState;
+            OnStateChanged?.Invoke(State);
+        }
+
+
         private IRuleStorage RuleStorage { get; set; }
         /// <summary>
         /// Starts the engine. Reads <see cref="AnalyzeRule"/>s from storage and builds a collection of <see cref="ProgramAnalyzer"/>s to hold them.
@@ -67,18 +78,21 @@ namespace HealthAndAuditShared
         /// </summary>
         public void StopEngine()
         {
-            AddMessage("Initiating engine shutdown.");
-            State = State.ShuttingDown;        
-            AddMessage("Waiting for all analyzers to finish.");
-            var timer = new Stopwatch();
-            timer.Start();
-            while (Analyzers.Any(a => a.Value.State != State.Stopped) && timer.ElapsedMilliseconds < 300000)
+            Task.Run(() =>
             {
-                AddMessage($"{Analyzers.Count(a => a.Value.State != State.Stopped)} analyzers not stopped. Waited {timer.ElapsedMilliseconds} ms.");
-                Thread.Sleep(1000);
-            }
-            AddMessage("Shutdown complete.");
-            State = State.Stopped;
+                AddMessage("Initiating engine shutdown.");
+                ChangeState(State.ShuttingDown);
+                AddMessage("Waiting for all analyzers to finish.");
+                var timer = new Stopwatch();
+                timer.Start();
+                while (Analyzers.Any(a => a.Value.State != State.Stopped) && timer.ElapsedMilliseconds < 30000)
+                {
+                    AddMessage($"{Analyzers.Count(a => a.Value.State != State.Stopped)} analyzers not stopped. Waited {timer.ElapsedMilliseconds} ms.");
+                    Task.Delay(1000).Wait();
+                }
+                AddMessage("Shutdown complete.");
+                ChangeState(State.Stopped);
+            });
         }
         /// <summary>
         /// Messages from the engine. eg: if it has started, events recivied.
@@ -106,15 +120,14 @@ namespace HealthAndAuditShared
         private ConcurrentQueue<SystemEvent> MainEventQueue { get; } = new ConcurrentQueue<SystemEvent>();
         private ConcurrentDictionary<string, ProgramAnalyzer> Analyzers { get; } = new ConcurrentDictionary<string, ProgramAnalyzer>();
 
-        public List<(string name,string state)> GetCurrentAnalyzersInfo()
-        {
-            var ret = new List<(string name, string state)>();
-            foreach(var anal in Analyzers)
-            {                
-                ret.Add((name: anal.Key, state: anal.Value.State.ToString()));
-            }
-            return ret;
-        }
+        public delegate void NewAnalyzerInfo(string name, string info);
+        public event NewAnalyzerInfo OnNewAnalyzerInfo;
+        private void AnalyzerChangeState(string name, string info)
+        {            
+            OnNewAnalyzerInfo?.Invoke(name, info);
+        }        
+
+      
 
         /// <summary>
         /// Adds a list of <see cref="SystemHealthExternalInterface.SystemEvent"/>s to main queue of the engine.
@@ -145,8 +158,8 @@ namespace HealthAndAuditShared
             Task.Run(() =>
                           {
                               try
-                              {                                  
-                                  State = State.Running;
+                              {
+                                  ChangeState(State.Running);
                                   AddMessage("Main engine Task started.");
                                   while (State == State.Running)
                                   {
@@ -166,7 +179,7 @@ namespace HealthAndAuditShared
                               }
                               catch (Exception ex)
                               {
-                                  State = State.Stopped;
+                                  ChangeState(State.Stopped);
                                   var msg = new AlarmMessage(AlarmLevel.Medium, AppDomain.CurrentDomain.FriendlyName, $"Exception in {nameof(AnalyzerEngine)}.{nameof(StartEngineTask)}. Engine is down. Engine will try to restart.", ex.Message);
                                   AlarmMessageManager.RaiseAlarmAsync(msg).Wait();
                               }
@@ -214,6 +227,7 @@ namespace HealthAndAuditShared
                     var analyser = new ProgramAnalyzer(AlarmMessageManager) { ProgramName = fromQ.AppInfo.ApplicationName };
                     if (Analyzers.TryAdd(analyser.ProgramName, analyser))
                     {
+                        analyser.OnAnalyzerInfo += AnalyzerChangeState;
                         AddMessage($"Added blank analyzer for {fromQ.AppInfo.ApplicationName} in {nameof(Analyzers)}.");
                         analyser.StartAnalyzerTask();
                         analyser.AddEvent(fromQ);
@@ -228,20 +242,52 @@ namespace HealthAndAuditShared
 
         public void ReloadRulesForAnalyzer(string analyzerProgramName)
         {
-            var analyzer = Analyzers.FirstOrDefault(a => a.Key == analyzerProgramName).Value;
-            AddMessage($"Reloading rules for {analyzerProgramName}. Stopping Analyzer.");
-            analyzer.StopAnalyzer();
-            while(analyzer.State != State.Stopped)
+            Task.Run(() =>
             {
-                //wait for stop
+                var analyzer = Analyzers.FirstOrDefault(a => a.Key == analyzerProgramName).Value;
+                AddMessage($"Reloading rules for {analyzerProgramName}. Stopping Analyzer.");
+                analyzer.StopAnalyzer();
+                while (analyzer.State != State.Stopped)
+                {
+                    //wait for stop
+                }
+                analyzer.UnloadAllRules();
+                AddMessage($"{analyzerProgramName} analyzer stopped and rules unloaded.");
+                var rules = RuleStorage.GetRulesForApplication(analyzerProgramName);
+                AddRulesToAnalyzer(rules);
+                AddMessage($"{analyzer.ProgramName} analyzer starting.");
+                analyzer.StartAnalyzerTask();
+            });
+        }
+
+        public List<string> GetRulesLoadedInAnalyzer(string analyzerProgramName)
+        {
+            if (Analyzers.ContainsKey(analyzerProgramName))
+            {
+                var analyzer = Analyzers[analyzerProgramName];
+                return analyzer.Rules.Select(rule => rule.Key).ToList();
             }
-            analyzer.UnloadAllRules();
-            AddMessage($"{analyzerProgramName} analyzer stopped and rules unloaded.");
-            var rules = RuleStorage.GetRulesForApplication(analyzerProgramName);                        
-            AddRulesToAnalyzer(rules);
-            AddMessage($"{analyzer.ProgramName} analyzer starting.");
-            analyzer.StartAnalyzerTask();
-        }        
+            return new List<string>();
+        }
+        public List<AnalyzerInstanceInfo> GetCurrentAnalyzersInfo()
+        {
+            var ret = new List<AnalyzerInstanceInfo>();
+            foreach (var anal in Analyzers)
+            {
+                ret.Add(new AnalyzerInstanceInfo { Name = anal.Key, State = anal.Value.State.ToString(), EventsInQueue= anal.Value.NumberOfEventsInQueue, NumberOfRulesLoaded = anal.Value.Rules.Count});
+            }
+            return ret;
+        }
+
+        public AnalyzerInstanceInfo GetInfoForAnalyzer(string analyzerProgramName)
+        {
+            if (Analyzers.ContainsKey(analyzerProgramName))
+            {
+                var analyzer = Analyzers[analyzerProgramName];
+                return new AnalyzerInstanceInfo {EventsInQueue = analyzer.NumberOfEventsInQueue,Name = analyzer.ProgramName,NumberOfRulesLoaded = analyzer.Rules.Count,State = analyzer.State.ToString()};
+            }
+            return new AnalyzerInstanceInfo();
+        }
 
         private void AddRulesToAnalyzer(List<AnalyzeRule> rules)
         {
@@ -251,12 +297,21 @@ namespace HealthAndAuditShared
                 AddMessage($"Rule {rule.RuleName} added to {nameof(ProgramAnalyzer)} for {rule.ProgramName}. Rule applies to operation: {(string.IsNullOrEmpty(rule.OperationName) ? "All operations" : rule.OperationName)}.");
             }
         }
-
         private ProgramAnalyzer GetOrCreateAnalyzer(string programName)
         {
-           return Analyzers.GetOrAdd(programName, new ProgramAnalyzer(AlarmMessageManager));
+            var analyzer = Analyzers.GetOrAdd(programName, new ProgramAnalyzer(AlarmMessageManager));
+            analyzer.OnAnalyzerInfo -= AnalyzerChangeState;
+            analyzer.OnAnalyzerInfo += AnalyzerChangeState;
+            return analyzer;
         }
 
+        public class AnalyzerInstanceInfo
+        {
+            public string Name { get; set; }
+            public string State { get; set; }
+            public int EventsInQueue { get; set; }
+            public int NumberOfRulesLoaded { get; set; }
+        }
 
         /// <summary>
         /// Holds the <see cref="AnalyzeRule"/>s to analyse one program. Starts its own task to run analyses.
@@ -272,10 +327,21 @@ namespace HealthAndAuditShared
                     realRule.AttachObserver(this);
                 }
             }
+
+            public delegate void AnalyzerInfo(string name, string info);
+            public event AnalyzerInfo OnAnalyzerInfo;
+            private void AnalyzerChangeState(State state)
+            {
+                State = state;
+                var info = State + ". " + Rules.Count + " rules loaded." + NumberOfEventsInQueue + " events in queue.";
+                OnAnalyzerInfo?.Invoke(ProgramName, info);
+            }
+
             public State State { get; private set; } = State.Stopped;
             public string ProgramName { get; set; }
-            private AlarmMessageManager AlarmMessageManager { get; }            
-            private ConcurrentDictionary<string, AnalyzeRule> Rules { get; } = new ConcurrentDictionary<string, AnalyzeRule>();
+            private AlarmMessageManager AlarmMessageManager { get; }           
+            internal ConcurrentDictionary<string, AnalyzeRule> Rules { get; } = new ConcurrentDictionary<string, AnalyzeRule>();
+            internal int NumberOfEventsInQueue => EventQueue.Count;
             private ConcurrentQueue<SystemEvent> EventQueue { get; } = new ConcurrentQueue<SystemEvent>();
             public void AddEvent(SystemEvent result)
             {
@@ -284,7 +350,7 @@ namespace HealthAndAuditShared
 
             public void StopAnalyzer()
             {
-                State = State.ShuttingDown;
+                AnalyzerChangeState(State.ShuttingDown);
             }
 
             public void StartAnalyzerTask()
@@ -293,7 +359,7 @@ namespace HealthAndAuditShared
                                {
                                    try                                   
                                    {
-                                       State = State.Running;
+                                       AnalyzerChangeState(State.Running);
                                        while (State == State.Running)
                                        {
                                            MainLoop();
@@ -302,11 +368,11 @@ namespace HealthAndAuditShared
                                        {
                                            MainLoop();
                                        }
-                                       State = State.Stopped;
+                                       AnalyzerChangeState(State.Stopped);
                                    }
                                    catch (Exception ex)
                                    {
-                                       State = State.Stopped;
+                                       AnalyzerChangeState(State.Stopped);
                                        var msg = new AlarmMessage(AlarmLevel.Medium, AppDomain.CurrentDomain.FriendlyName, $"Exception in {nameof(ProgramAnalyzer)}.{nameof(StartAnalyzerTask)} for {ProgramName}.", ex.InnerException?.Message ?? ex.Message);
                                        AlarmMessageManager.RaiseAlarm(msg);
                                    }

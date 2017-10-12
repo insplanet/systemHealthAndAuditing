@@ -14,7 +14,9 @@ namespace HealthAndAuditShared
 {
     public class EventProcessor : IEventProcessor
     {
-        public static ConcurrentDictionary<string, string> EventProcInfo { get;  } = new ConcurrentDictionary<string, string>();
+        public delegate void NewInfo(ConcurrentDictionary<string, string> info);
+        public static event NewInfo OnUpdatedInfo;
+        private static ConcurrentDictionary<string, string> EventProcInfo { get;  } = new ConcurrentDictionary<string, string>();
         private static FileLogger Logger { get; set; }
         private static AnalyzerEngine Engine { get; set; }
         private static string AzureStorageConnectionString { get; set; }
@@ -25,6 +27,12 @@ namespace HealthAndAuditShared
         }
 
         private string id;
+
+        private void AddNewInfo(string id, string info)
+        {
+            EventProcInfo[id] = TimeStampThis(info);
+            OnUpdatedInfo?.Invoke(EventProcInfo);
+        }
 
         private static bool IsInitialized { get; set; }
 
@@ -41,7 +49,7 @@ namespace HealthAndAuditShared
         public Task OpenAsync(PartitionContext context)
         {
             id = Guid.NewGuid().ToString();
-            EventProcInfo.TryAdd(id, TimeStampThis("Open"));
+            AddNewInfo(id, "Open");
             return Task.FromResult<object>(null);
         }
 
@@ -54,16 +62,16 @@ namespace HealthAndAuditShared
                 throw new Exception("Processor not initialized. Run Init() before starting");
             }
 
-            EventProcInfo[id] = TimeStampThis("Processing");
+            AddNewInfo(id, "Processing");
             var parsedData = messages.Select(eventData => Encoding.UTF8.GetString(eventData.GetBytes())).Select(JsonConvert.DeserializeObject<SystemEvent>).ToList();
             if (Engine.EngineIsRunning)
             {
                 await Engine.AddToMainQueue(parsedData);
-                EventProcInfo[id] = TimeStampThis(parsedData.Count + " events added to engine");
+                AddNewInfo(id, parsedData.Count + " events added to engine");
             }
             else
             {
-                EventProcInfo[id] = TimeStampThis("Engine is not running. Cannot add events. Aborting.");
+                AddNewInfo(id, "Engine is not running. Cannot add events. Aborting.");
                 return;
             }
             try
@@ -100,7 +108,7 @@ namespace HealthAndAuditShared
                     }
                     batchOperation.Insert(operationResult);
                 }
-                EventProcInfo[id] = TimeStampThis("Running batches");
+                AddNewInfo(id, "Running batches");
                 foreach (var batch in batches)
                 {
                     await Table.ExecuteBatchAsync(batch.Value);
@@ -112,15 +120,15 @@ namespace HealthAndAuditShared
             }
             catch (Exception ex)
             {
-                EventProcInfo[id] = TimeStampThis("!ERROR! " + ex.Message);
+                AddNewInfo(id, "!ERROR! " + ex.Message);
                 Logger.AddRow("!ERROR! In event processor");
                 Logger.AddRow(ex.ToString());
             }
             finally
             {
-                EventProcInfo[id] = TimeStampThis("Setting Checkpoint");
+                AddNewInfo(id, "Setting Checkpoint");
                 await context.CheckpointAsync();
-                EventProcInfo[id] = TimeStampThis("Checkpoint set");
+                AddNewInfo(id, "Checkpoint set");
             }
         }
 
@@ -142,11 +150,11 @@ namespace HealthAndAuditShared
 
         public async Task CloseAsync(PartitionContext context, CloseReason reason)
         {
-            EventProcInfo[id] = TimeStampThis("Closing");
+            AddNewInfo(id, "Closing");
             if (reason == CloseReason.Shutdown)
             {
                 await context.CheckpointAsync();
-                EventProcInfo[id] = TimeStampThis("Closing, checkpoint set.");
+                AddNewInfo(id, "Closing, checkpoint set.");
             }
         }
     }

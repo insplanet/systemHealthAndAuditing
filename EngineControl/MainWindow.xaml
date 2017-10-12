@@ -5,16 +5,27 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:EngineControl"
         mc:Ignorable="d"
-        Title="Program event analyzer engine" Height="424.704" Width="966.155">
-    <Grid>       
-        <Label x:Name="EngineStatus" Content="EngineStatus" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Grid.ColumnSpan="2"/>
-        <Separator HorizontalAlignment="Left" Height="100" Margin="10,-22,0,0" VerticalAlignment="Top" Width="523" RenderTransformOrigin="0.364,0.323" Grid.ColumnSpan="2"/>
-        <Label Content="Eventprocessor status" HorizontalAlignment="Left" Margin="10,31,0,0" VerticalAlignment="Top" FontWeight="Bold" Grid.ColumnSpan="2"/>
-        <TextBlock x:Name="EventProcStatus" HorizontalAlignment="Left" Margin="10,57,0,0" TextWrapping="NoWrap" Text="Event processor not running." VerticalAlignment="Top" Height="68" Width="523" Grid.ColumnSpan="2"/>
+        Title="Program event analyzer engine" Height="424.704" Width="1055.155">
+    <Grid>
+
+
+
+        <Label x:Name="EngineStatus" Content="EngineStatus" HorizontalAlignment="Left" Margin="10,9,0,0" VerticalAlignment="Top"/>
+        <Separator HorizontalAlignment="Left" Height="11" Margin="10,39,0,0" VerticalAlignment="Top" Width="1027" RenderTransformOrigin="0.364,0.323"/>
+        <Label Content="Eventprocessor status" HorizontalAlignment="Left" Margin="10,43,0,0" VerticalAlignment="Top" FontWeight="Bold"/>
+        <TextBlock x:Name="EventProcStatus" HorizontalAlignment="Left" Margin="10,70,0,0" TextWrapping="NoWrap" Text="Event processor not running." VerticalAlignment="Top" Height="68" Width="475"/>
         <Label Content="Messages" HorizontalAlignment="Left" Margin="10,144,0,0" VerticalAlignment="Top" FontWeight="Bold" Grid.ColumnSpan="2"/>
-        <TextBox x:Name="MessageBox" TextBlock.LineHeight="18px" HorizontalAlignment="Left" Height="200" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Visible" Margin="10,170,0,0" TextWrapping="NoWrap"  VerticalAlignment="Top" Width="938" Grid.RowSpan="2" Grid.ColumnSpan="2" />
-        <Button x:Name="RestartButton" Content="Restart engine" HorizontalAlignment="Left" Margin="593,10,0,0" VerticalAlignment="Top" Width="95" Click="Restart_Click"/>
-        <Button x:Name="ShutDownButton" Content="Shutdown" HorizontalAlignment="Left" Margin="709,10,0,0" VerticalAlignment="Top" Width="75" Click="Shutdown_Click"/>
+        <TextBox x:Name="MessageBox" TextBlock.LineHeight="18px" HorizontalAlignment="Left" Height="200" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Visible" Margin="10,170,0,0" TextWrapping="NoWrap"  VerticalAlignment="Top" Width="1027" />
+        <Button x:Name="RestartButton" Content="Restart engine" HorizontalAlignment="Left" Margin="443,12,0,0" VerticalAlignment="Top" Width="95" Click="Restart_Click"/>
+        <Button x:Name="ShutDownButton" Content="Shutdown engine" HorizontalAlignment="Left" Margin="543,12,0,0" VerticalAlignment="Top" Width="104" Click="Shutdown_Click"/>
+        <CheckBox x:Name="ShutDownCheckbox" Content="ActivateShutdown" HorizontalAlignment="Left" Margin="919,21,0,0" VerticalAlignment="Top" Click="ActivateShutdown_Checked" RenderTransformOrigin="0.724,0.533"/>
+        <Label Content="(shutdown engine to be able to close program)" HorizontalAlignment="Left" Margin="828,-4,0,0" VerticalAlignment="Top" Width="217" FontSize="10"/>
+        <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="115" Margin="498,50,0,0" VerticalAlignment="Top" Width="2"/>
+        <Label Content="Analyzer info" HorizontalAlignment="Left" Margin="498,43,0,0" VerticalAlignment="Top" FontWeight="Bold"/>
+        <ListBox x:Name="AnalyzerList" HorizontalAlignment="Left" Height="100" Margin="505,65,0,0" VerticalAlignment="Top" Width="209" SelectionChanged="AnalyzerList_SelectionChanged"/>
+        <Button x:Name="AnalyzerReloadButton" Content="Reload rules" IsEnabled="False" HorizontalAlignment="Left" Margin="741,70,0,0" VerticalAlignment="Top" MinWidth="75" Click="AnalyzerReloadButton_Click"/>
+        <ListBox x:Name="RuleList" HorizontalAlignment="Left" Height="70" Margin="741,95,0,0" VerticalAlignment="Top" Width="262"/>
+        <Label x:Name="AnalyzerInfoLabel" Content="" HorizontalAlignment="Left" Margin="741,49,0,0" VerticalAlignment="Top"/>
 
     </Grid>
 </Window>
