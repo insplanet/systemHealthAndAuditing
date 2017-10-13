@@ -45,9 +45,9 @@ namespace EngineControl
             AnalyzerInfo.Clear();
         }
 
-        public void AddMessageToSnapShot(string message)
+        public void AddMessageToSnapShot(DateTime timestamp,string message)
         {
-           CurrentList.Push(message);
+           CurrentList.Push(new TimeStampedMessage{TimeStamp = timestamp, Message = message});
         }
 
         public void AddAnalyzerInfoToSnapShot(AnalyzerEngine.AnalyzerInstanceInfo info)
@@ -55,10 +55,10 @@ namespace EngineControl
             AnalyzerInfo.AddOrUpdate(info.Name, info, (key, oldValue) =>  info);
         }
 
-        private ConcurrentStack<string> MessageList1 { get; } = new ConcurrentStack<string>();
-        private ConcurrentStack<string> MessageList2 { get; } = new ConcurrentStack<string>();
+        private ConcurrentStack<TimeStampedMessage> MessageList1 { get; } = new ConcurrentStack<TimeStampedMessage>();
+        private ConcurrentStack<TimeStampedMessage> MessageList2 { get; } = new ConcurrentStack<TimeStampedMessage>();
 
-        private ConcurrentStack<string> CurrentList
+        private ConcurrentStack<TimeStampedMessage> CurrentList
         {
             get
             {
@@ -70,7 +70,7 @@ namespace EngineControl
             }
         }
 
-        private ConcurrentStack<string> NotCurrentList
+        private ConcurrentStack<TimeStampedMessage> NotCurrentList
         {
             get
             {
@@ -90,13 +90,13 @@ namespace EngineControl
             List1IsCurrent = !List1IsCurrent;
         }
 
-        private Queue<string> ListToExport { get; } = new Queue<string>();
+        private Queue<TimeStampedMessage> ListToExport { get; } = new Queue<TimeStampedMessage>();
 
-        private (List<string> list,int overflow ) GetListToExport()
+        private (List<TimeStampedMessage> list,int overflow ) GetListToExport()
         {
             var listSize = 20;
             var enqueuedCounter = 0;
-            while (NotCurrentList.TryPop(out string message))
+            while (NotCurrentList.TryPop(out TimeStampedMessage message))
             {
                 if (ListToExport.Count > listSize)
                 {
@@ -164,19 +164,17 @@ namespace EngineControl
         private class StatusSnapshot
         {
             public DateTime GeneratedUTC { get; set; }
-            public List<string> Messages { get; } = new List<string>();
+            public List<TimeStampedMessage> Messages { get; } = new List<TimeStampedMessage>();
             public int OverFlowMessages { get; set; }
-            public List<AnalyzerEngine.AnalyzerInstanceInfo> AnalyzerList { get; } = new List<AnalyzerEngine.AnalyzerInstanceInfo>();
+            public List<AnalyzerEngine.AnalyzerInstanceInfo> AnalyzerList { get; } = new List<AnalyzerEngine.AnalyzerInstanceInfo>();           
+        }
 
-            public void Reset()
-            {
-                Messages.Clear();
-                AnalyzerList.Clear();
-            }
+        private class TimeStampedMessage
+        {
+            public DateTime TimeStamp { get; set; }
+            public string Message { get; set; }
         }
     }
-
-
 
 }
 

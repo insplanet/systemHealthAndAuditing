@@ -51,10 +51,10 @@ namespace EngineControl
                         {
                             this.Dispatcher.Invoke(() =>
                             {
-                                MessageBox.AppendText($"{DateTime.Now}\t{message}{Environment.NewLine}");
+                                MessageBox.AppendText($"{DateTime.UtcNow}\t{message}{Environment.NewLine}");
                             });
                             Logger.AddRow(message);
-                            SnapShotGenerator.AddMessageToSnapShot(message);
+                            SnapShotGenerator.AddMessageToSnapShot(DateTime.UtcNow,message);
                         }
                     }
 
