@@ -209,7 +209,7 @@ namespace HealthAndAuditShared
         public void AddRow(string[] columns, string separator = "   ")
         {
             var row = new StringBuilder();
-            row.Append(DateTime.Now);
+            row.Append(DateTime.UtcNow);
             foreach (string column in columns)
             {
                 row.Append(separator);

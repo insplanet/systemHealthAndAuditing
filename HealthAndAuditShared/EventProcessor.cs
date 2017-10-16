@@ -23,7 +23,7 @@ namespace HealthAndAuditShared
         private static string OperationStorageTableName { get; set; } 
         private static string TimeStampThis(string input)
         {
-            return $"\t{DateTime.Now}\t{input}";
+            return $"\t{DateTime.UtcNow}\t{input}";
         }
 
         private string id;

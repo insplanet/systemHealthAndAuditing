@@ -44,7 +44,7 @@ namespace QuickAnalyzer
         public static FileLogger Logger { get; set; } = new FileLogger();
         public static string TimeStampThis(string input)
         {
-            return $"{DateTime.Now} | {input}";
+            return $"{DateTime.UtcNow} | {input}";
         }
 
         private static string LeftSideDashLine { get; } = "--------------------------";
@@ -175,7 +175,7 @@ namespace QuickAnalyzer
             }
             RenderAnalyzerInfo();
             RenderMessages();
-            WriteLine(RightPadWithSpace(DateTime.Now.ToString()));
+            WriteLine(RightPadWithSpace(DateTime.UtcNow.ToString()));
         }
         private static void RenderAnalyzerInfo()
         {
