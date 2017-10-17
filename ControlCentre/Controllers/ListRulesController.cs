@@ -20,7 +20,7 @@ namespace ControlCentre.Controllers
         public ActionResult Index()
         {
             var docdb = HelperMethods.GetRuleStorage();
-            var all = docdb.GetAllRuleSets();
+            var all = docdb.GetAllRules();
 
             return View("ListAll",all);
         }

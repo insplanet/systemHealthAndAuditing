@@ -22,9 +22,9 @@ namespace HealthAndAuditShared
     /// <summary>
     /// Abstract base class for RuleSets.
     /// </summary>
-    public abstract class AnalyseRuleset
+    public abstract class AnalyzeRule
     {
-        protected AnalyseRuleset()
+        protected AnalyzeRule()
         {
             RealType = GetType();
         }
@@ -32,7 +32,7 @@ namespace HealthAndAuditShared
         public Type RealType { get; set; }
         [JsonProperty(PropertyName = "id")]
         public string RuleID { get; internal set; }
-        public string ApplicationName { get; set; }
+        public string ProgramName { get; set; }
         /// <summary>
         /// Gets or sets the name of the operation to be analysed. Leave null or empty to catch all operations in program.
         /// </summary>
@@ -55,8 +55,8 @@ namespace HealthAndAuditShared
     /// <summary>
     /// A rule that will trigger if the operation pile builds up to a preset limit within the time limit set in KeepOperationInPileTime.
     /// </summary>
-    /// <seealso cref="HealthAndAuditShared.AnalyseRuleset" />
-    public class MaxAmountOfFailuresRule : AnalyseRuleset
+    /// <seealso cref="HealthAndAuditShared.AnalyzeRule" />
+    public class MaxAmountOfFailuresRule : AnalyzeRule
     {
         public uint MaxTimesFailureAllowed { get; set; }
         private Queue<DateTime> Failures { get; } = new Queue<DateTime>();
@@ -83,8 +83,8 @@ namespace HealthAndAuditShared
     /// <summary>
     /// A rule that will trigger if the operations fails at MaxFailurePercent or higher within the time limit set in KeepOperationInPileTime.
     /// </summary>
-    /// <seealso cref="HealthAndAuditShared.AnalyseRuleset" />
-    public class FailurePercentRule : AnalyseRuleset
+    /// <seealso cref="HealthAndAuditShared.AnalyzeRule" />
+    public class FailurePercentRule : AnalyzeRule
     {
         public uint MaxFailurePercent { get; set; } = 0;
         public uint MinimumAmountOfOperationsBeforeRuleCanBeTriggered { get; set; } = 10;
@@ -126,12 +126,12 @@ namespace HealthAndAuditShared
     }
 
     /// <summary>
-    /// Will check if time between operations is taking too long. To use with start and end operation variables, leave the <seealso cref="AnalyseRuleset.OperationName"/> null.
+    /// Will check if time between operations is taking too long. To use with start and end operation variables, leave the <seealso cref="AnalyzeRule.OperationName"/> null.
     /// With start and end in use the rule will trigger if it takes too long between start and end OR if start is followed by another start OR if end is coming without a start first.
     /// NOTE: an observer must be attached to this rule <see cref="ITimeBetweenOperationsObserver"/>
     /// </summary>
-    /// <seealso cref="HealthAndAuditShared.AnalyseRuleset" />
-    public class TimeBetweenOperations : AnalyseRuleset
+    /// <seealso cref="HealthAndAuditShared.AnalyzeRule" />
+    public class TimeBetweenOperations : AnalyzeRule
     {
         private Timer _timer;
         private List<ITimeBetweenOperationsObserver> _observers;
@@ -229,7 +229,7 @@ namespace HealthAndAuditShared
         }
     }
 
-    public class ScriptRule : AnalyseRuleset
+    public class ScriptRule : AnalyzeRule
     {
         public override bool AddAndCheckIfTriggered(SystemEvent opResult)
         {

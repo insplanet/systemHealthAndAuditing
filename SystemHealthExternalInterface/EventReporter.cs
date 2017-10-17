@@ -10,8 +10,11 @@
 *	Contributors: Mikael Axblom															*
 *****************************************************************************************/
 
+using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.ServiceBus.Messaging;
@@ -22,15 +25,49 @@ namespace SystemHealthExternalInterface
 {
     public class EventReporter
     {
-        private string Send_EventHubConnectionstring { get; }
+        private string SendEventHubConnectionstring { get; }
         private string EventHubPath { get; }
         private EventHubClient Client { get; }
 
+        /// <summary>
+        /// Create a new reporter and manually set the connection
+        /// </summary>
+        /// <param name="sendConnectionstring"></param>
+        /// <param name="eventHubPath"></param>
         public EventReporter(string sendConnectionstring, string eventHubPath)
         {
-            Send_EventHubConnectionstring = sendConnectionstring;
+            SendEventHubConnectionstring = sendConnectionstring;
             EventHubPath = eventHubPath;
-            Client = EventHubClient.CreateFromConnectionString(Send_EventHubConnectionstring, EventHubPath);
+            Client = EventHubClient.CreateFromConnectionString(SendEventHubConnectionstring, EventHubPath);
+        }
+
+        /// <summary>
+        /// Create a new reporter and read connection info from app.config ("Microsoft.ServiceBus.ConnectionString.Send", "EventHubPath")
+        /// </summary>
+        public EventReporter()
+        {
+            SendEventHubConnectionstring = ConfigurationManager.AppSettings["Microsoft.ServiceBus.ConnectionString.Send"];
+            EventHubPath = ConfigurationManager.AppSettings["EventHubPath"];
+            Client = EventHubClient.CreateFromConnectionString(SendEventHubConnectionstring, EventHubPath);
+        }
+
+
+        //WARNING!!! Swallows exceptions unless an Action to handle it is supplied
+        public void SafeReportEvent(SystemEvent @event, Action<Exception> handleException = null)
+        {
+            try
+            {
+                ReportEvent(@event);
+            }
+            catch (Exception e)
+            {
+                handleException?.Invoke(e);
+            }
+        }
+
+        public void ReportEvent(SystemEvent @event)
+        {
+            Task.Run(async () => { await ReportEventAsync(@event); }).Wait();
         }
 
         public async Task ReportEventAsync(SystemEvent @event)

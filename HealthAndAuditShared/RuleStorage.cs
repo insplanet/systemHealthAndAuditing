@@ -16,33 +16,33 @@ namespace HealthAndAuditShared
 {
     public interface IRuleStorage
     {
-        List<AnalyseRuleset> GetAllRuleSets();
-        List<AnalyseRuleset> GetRuleSetsForApplication(string applicationName);
-        void UpsertRuleSet(AnalyseRuleset ruleset);
-        void DeleteRuleSet(AnalyseRuleset ruleset);
+        List<AnalyzeRule> GetAllRules();
+        List<AnalyzeRule> GetRulesForApplication(string applicationName);
+        void UpsertRuleSet(AnalyzeRule ruleset);
+        void DeleteRuleSet(AnalyzeRule ruleset);
     }
 
   
 
     public class TestRuleStorage : IRuleStorage
     {
-        public List<AnalyseRuleset> GetAllRuleSets()
+        public List<AnalyzeRule> GetAllRules()
         {
-            return GetRuleSetsForApplication("");
+            return GetRulesForApplication("");
         }
 
-        public List<AnalyseRuleset> GetRuleSetsForApplication(string applicationName)
+        public List<AnalyzeRule> GetRulesForApplication(string applicationName)
         {
             var rules = new MaxAmountOfFailuresRule();
-            rules.ApplicationName = "Eventpump.vshost.exe";
+            rules.ProgramName = "Eventpump.vshost.exe";
             rules.RuleName = "TestRule001";
             rules.KeepOperationInPileTime = new TimeSpan(0, 30, 0);
             rules.MaxTimesFailureAllowed = 10;
-            var list = new List<AnalyseRuleset>();
+            var list = new List<AnalyzeRule>();
             list.Add(rules);
 
             var rs = new FailurePercentRule();
-            rs.ApplicationName = "Eventpump.vshost.exe";
+            rs.ProgramName = "Eventpump.vshost.exe";
             rs.RuleName = "TestRule002";
             rs.KeepOperationInPileTime = new TimeSpan(0, 30, 0);
             rs.MaxFailurePercent = 80;
@@ -52,12 +52,12 @@ namespace HealthAndAuditShared
             return list;
         }
 
-        public void UpsertRuleSet(AnalyseRuleset ruleset)
+        public void UpsertRuleSet(AnalyzeRule ruleset)
         {
             throw new NotImplementedException();
         }
 
-        public void DeleteRuleSet(AnalyseRuleset ruleset)
+        public void DeleteRuleSet(AnalyzeRule ruleset)
         {
             throw new NotImplementedException();
         }

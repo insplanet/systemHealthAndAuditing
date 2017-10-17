@@ -19,10 +19,20 @@ using Newtonsoft.Json;
 
 namespace SystemHealthExternalInterface
 {
+    
+    /// <summary>
+    /// Used to report a system event to the health and audit system
+    /// </summary>
     [Serializable]
     public class SystemEvent : TableEntity
     {
-        public SystemEvent() { }
+        public SystemEvent()
+        {
+            Result = OperationResult.Neutral;
+            AppInfo = new ApplicationInfo();
+            RowKey = Guid.NewGuid().ToString();
+            PartitionKey = string.IsNullOrWhiteSpace(AppInfo?.ApplicationName) ? "Unkown application" : AppInfo.ApplicationName;
+        }
         public SystemEvent(OperationResult result)
         {
             Result = result;
@@ -33,8 +43,9 @@ namespace SystemHealthExternalInterface
 
         public enum OperationResult
         {
-            Success,
-            Failure
+            Neutral,
+            Failure,
+            Success            
         }
 
         public string ID
@@ -54,12 +65,12 @@ namespace SystemHealthExternalInterface
             return new Tuple<string, string>(splitID[0], splitID[1]);
         }
 
-        public DateTime TimeStampUtc { get; set; } = DateTime.UtcNow;
+        public DateTime TimeStampUtc { get;} = DateTime.UtcNow;
         public OperationResult Result { get; set; }
         public string OperationName { get; set; }
         public Exception CaughtException { get; set; }
-        public Dictionary<string, object> OperationParameters { get; set; }
-        public ApplicationInfo AppInfo { get; set; }
+        public Dictionary<string, object> OperationParameters { get; } = new Dictionary<string, object>();
+        public ApplicationInfo AppInfo { get;}
         public string OtherInfo { get; set; }
 
 
