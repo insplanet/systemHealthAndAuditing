@@ -11,6 +11,7 @@
 *****************************************************************************************/
 
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,16 +23,33 @@ namespace SystemHealthExternalInterface
 {
     public class EventReporter
     {
-        private string Send_EventHubConnectionstring { get; }
+        private string SendEventHubConnectionstring { get; }
         private string EventHubPath { get; }
         private EventHubClient Client { get; }
 
+        /// <summary>
+        /// Create a new reporter and manually set the connection
+        /// </summary>
+        /// <param name="sendConnectionstring"></param>
+        /// <param name="eventHubPath"></param>
         public EventReporter(string sendConnectionstring, string eventHubPath)
         {
-            Send_EventHubConnectionstring = sendConnectionstring;
+            SendEventHubConnectionstring = sendConnectionstring;
             EventHubPath = eventHubPath;
-            Client = EventHubClient.CreateFromConnectionString(Send_EventHubConnectionstring, EventHubPath);
+            Client = EventHubClient.CreateFromConnectionString(SendEventHubConnectionstring, EventHubPath);
         }
+
+        /// <summary>
+        /// Create a new reporter and read connection info from app.config ("Microsoft.ServiceBus.ConnectionString.Send", "EventHubPath")
+        /// </summary>
+        public EventReporter()
+        {
+            SendEventHubConnectionstring = ConfigurationManager.AppSettings["Microsoft.ServiceBus.ConnectionString.Send"];
+            EventHubPath = ConfigurationManager.AppSettings["EventHubPath"];
+            Client = EventHubClient.CreateFromConnectionString(SendEventHubConnectionstring, EventHubPath);
+        }
+
+
 
         public async Task ReportEventAsync(SystemEvent @event)
         {

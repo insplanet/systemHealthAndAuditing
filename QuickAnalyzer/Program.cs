@@ -364,7 +364,7 @@ namespace QuickAnalyzer
                     return false;
                 }
                 var analyzerName = fullInput[1];
-                if (Engine.GetCurrentAnalyzersInfo().Any(a => a.name == analyzerName))
+                if (Engine.GetCurrentAnalyzersInfo().Any(a => a.Name == analyzerName))
                 {
                     Engine.ReloadRulesForAnalyzer(analyzerName);
                     return true;

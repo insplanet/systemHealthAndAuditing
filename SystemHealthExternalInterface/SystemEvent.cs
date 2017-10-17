@@ -19,6 +19,10 @@ using Newtonsoft.Json;
 
 namespace SystemHealthExternalInterface
 {
+    
+    /// <summary>
+    /// Used to report a system event to the health and audit system
+    /// </summary>
     [Serializable]
     public class SystemEvent : TableEntity
     {

@@ -5,9 +5,9 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("SystemHealthExternalInterface")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Method to send an event to the system health and audit system")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("Insplanet AB")]
 [assembly: AssemblyProduct("SystemHealthExternalInterface")]
 [assembly: AssemblyCopyright("Copyright ©  2016")]
 [assembly: AssemblyTrademark("")]

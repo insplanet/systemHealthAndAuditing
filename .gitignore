@@ -6,6 +6,7 @@
 private.config
 connections.config
 
+package.nuspec
 
 # User-specific files
 *.suo
