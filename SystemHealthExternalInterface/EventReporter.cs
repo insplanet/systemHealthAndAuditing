@@ -10,9 +10,11 @@
 *	Contributors: Mikael Axblom															*
 *****************************************************************************************/
 
+using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.ServiceBus.Messaging;
@@ -50,6 +52,23 @@ namespace SystemHealthExternalInterface
         }
 
 
+        //WARNING!!! Swallows exceptions unless an Action to handle it is supplied
+        public void SafeReportEvent(SystemEvent @event, Action<Exception> handleException = null)
+        {
+            try
+            {
+                ReportEvent(@event);
+            }
+            catch (Exception e)
+            {
+                handleException?.Invoke(e);
+            }
+        }
+
+        public void ReportEvent(SystemEvent @event)
+        {
+            Task.Run(async () => { await ReportEventAsync(@event); }).Wait();
+        }
 
         public async Task ReportEventAsync(SystemEvent @event)
         {

@@ -218,7 +218,7 @@ namespace HealthAndAuditShared
                             analyzer.StartAnalyzerTask();
                         }
                         analyzer.AddEvent(fromQ);
-                        AddMessage($"Event added from {fromQ.AppInfo.ApplicationName} to {nameof(Analyzers)}.");
+                        AddMessage($"{fromQ.Result} event {fromQ.OperationName} added from {fromQ.AppInfo.ApplicationName}.");
                     }
                 }
                 else

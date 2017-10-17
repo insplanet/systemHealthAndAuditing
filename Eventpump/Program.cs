@@ -71,7 +71,6 @@ namespace Eventpump
                         {
                             opres.OperationName = "operation2";
                         }
-                        opres.OperationParameters = new Dictionary<string, object>();
                         opres.OperationParameters.Add(nameof(innerCounter), innerCounter);
                         opres.OperationParameters.Add("test", 56);
 
