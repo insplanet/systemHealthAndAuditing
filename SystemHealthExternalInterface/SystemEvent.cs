@@ -31,14 +31,14 @@ namespace SystemHealthExternalInterface
             Result = OperationResult.Neutral;
             AppInfo = new ApplicationInfo();
             RowKey = Guid.NewGuid().ToString();
-            PartitionKey = string.IsNullOrWhiteSpace(AppInfo?.ApplicationName) ? "Unkown application" : AppInfo.ApplicationName;
+            PartitionKey = GeneratePartitionKey();
         }
         public SystemEvent(OperationResult result)
         {
             Result = result;
             AppInfo = new ApplicationInfo();
             RowKey = Guid.NewGuid().ToString();
-            PartitionKey = string.IsNullOrWhiteSpace(AppInfo?.ApplicationName) ? "Unkown application" : AppInfo.ApplicationName;
+            PartitionKey = GeneratePartitionKey();
         }
 
         public enum OperationResult
@@ -68,6 +68,7 @@ namespace SystemHealthExternalInterface
         public DateTime TimeStampUtc { get;} = DateTime.UtcNow;
         public OperationResult Result { get; set; }
         public string OperationName { get; set; }
+        public string UniqueOperationID { get; set; }
         public Exception CaughtException { get; set; }
         public Dictionary<string, object> OperationParameters { get; } = new Dictionary<string, object>();
         public ApplicationInfo AppInfo { get;}
@@ -82,6 +83,11 @@ namespace SystemHealthExternalInterface
             results.Add(nameof(OperationParameters), new EntityProperty(JsonConvert.SerializeObject(OperationParameters)));
             results.Add(nameof(AppInfo), new EntityProperty(JsonConvert.SerializeObject(AppInfo)));
             return results;
+        }
+
+        private string GeneratePartitionKey()
+        {
+            return string.IsNullOrWhiteSpace(AppInfo?.ApplicationName) ? "Unkown application" : AppInfo.ApplicationName.Replace("\\","_").Replace("/","_").Replace("#", "_").Replace("?", "_");
         }
 
     }

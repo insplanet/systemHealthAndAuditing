@@ -14,7 +14,6 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.ServiceBus.Messaging;
@@ -23,18 +22,29 @@ using Newtonsoft.Json.Converters;
 
 namespace SystemHealthExternalInterface
 {
-    public class EventReporter
+    public sealed class EventReporter
     {
-        private string SendEventHubConnectionstring { get; }
-        private string EventHubPath { get; }
-        private EventHubClient Client { get; }
+        #region Singleton stuff
+        private static readonly Lazy<EventReporter> LAZY = new Lazy<EventReporter>(() => new EventReporter());
+       
+        public static EventReporter Instance => LAZY.Value;
+        private EventReporter()
+        {
+
+        }
+        #endregion
+
+        public string OverrideApplicationNameWith { get; set; }
+        private string SendEventHubConnectionstring { get; set; }
+        private string EventHubPath { get; set; }
+        private EventHubClient Client { get; set; }
 
         /// <summary>
         /// Create a new reporter and manually set the connection
         /// </summary>
         /// <param name="sendConnectionstring"></param>
         /// <param name="eventHubPath"></param>
-        public EventReporter(string sendConnectionstring, string eventHubPath)
+        public void Init(string sendConnectionstring, string eventHubPath)
         {
             SendEventHubConnectionstring = sendConnectionstring;
             EventHubPath = eventHubPath;
@@ -44,7 +54,7 @@ namespace SystemHealthExternalInterface
         /// <summary>
         /// Create a new reporter and read connection info from app.config ("Microsoft.ServiceBus.ConnectionString.Send", "EventHubPath")
         /// </summary>
-        public EventReporter()
+        public void Init()
         {
             SendEventHubConnectionstring = ConfigurationManager.AppSettings["Microsoft.ServiceBus.ConnectionString.Send"];
             EventHubPath = ConfigurationManager.AppSettings["EventHubPath"];
@@ -72,6 +82,10 @@ namespace SystemHealthExternalInterface
 
         public async Task ReportEventAsync(SystemEvent @event)
         {
+            if (!string.IsNullOrWhiteSpace(OverrideApplicationNameWith))
+            {
+                @event.PartitionKey  = @event.AppInfo.ApplicationName = OverrideApplicationNameWith;
+            }
             await Client.SendAsync(new EventData(Encoding.UTF8.GetBytes(Serialise(@event))));
         }
 
