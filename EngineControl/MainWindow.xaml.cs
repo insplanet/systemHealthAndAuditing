@@ -49,10 +49,7 @@ namespace EngineControl
                     {
                         if (MesseageOutputQueue.TryDequeue(out string message))
                         {
-                            this.Dispatcher.Invoke(() =>
-                            {
-                                MessageBox.AppendText($"{DateTime.UtcNow}\t{message}{Environment.NewLine}");
-                            });
+                            //UpdateMessageBox($"{DateTime.UtcNow}\t{message}{Environment.NewLine}");
                             Logger.AddRow(message);
                             SnapShotGenerator.AddMessageToSnapShot(DateTime.UtcNow,message);
                         }
@@ -71,6 +68,20 @@ namespace EngineControl
             });
             StartUpdateSelectedAnalyzerTask();
         }
+
+        private void UpdateMessageBox(string textToAppend)
+        {
+            this.Dispatcher.Invoke(() =>
+            {
+                if (MessageBox.Text.Length > 50_000)
+                {
+                    MessageBox.Text = $"{Environment.NewLine} --- AUTOMATIC CLEANING --- {Environment.NewLine}" + MessageBox.Text.Substring(30_000);
+                }
+
+                MessageBox.AppendText(textToAppend);
+            });
+        }
+
 
         private void HandleEventProcessorInfo(ConcurrentDictionary<string, string> info)
         {
@@ -121,6 +132,7 @@ namespace EngineControl
             Task.Run(() =>
             {
                 Thread.CurrentThread.IsBackground = true;
+                SnapShotGenerator.Reset();
                 App.Engine.StopEngine();
             });
         }

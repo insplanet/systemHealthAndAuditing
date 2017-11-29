@@ -29,9 +29,9 @@ namespace Eventpump
 
             try
             {
-                var reporter = new EventReporter(ConfigurationManager.AppSettings["Microsoft.ServiceBus.ConnectionString.Send"], ConfigurationManager.AppSettings["EventHubPath"]);
+                EventReporter.Instance.Init();
 
-                
+
                 var t = 0;
                 var innerCounter = 0;
                 var edatalist = new List<SystemEvent>();
@@ -50,7 +50,7 @@ namespace Eventpump
                             ReadLine();
                             Clear();
                             //eventhubclient.SendBatch(edatalist);
-                            reporter.ReportEventBatchAsync(edatalist).Wait();
+                            EventReporter.Instance.ReportEventBatchAsync(edatalist).Wait();
                             edatalist.Clear();
                             WriteLine("Sent.");
                             WriteLine("Generating new eventbatch...");
