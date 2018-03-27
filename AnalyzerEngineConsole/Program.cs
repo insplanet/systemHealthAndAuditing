@@ -51,7 +51,8 @@ namespace AnalyzerEngineConsole
             EventHubName = ConfigurationManager.AppSettings["EventHubName"];
             var engineStartCounter = 0;
             var maxEngineRestarts = 10;
-            Task.Run(() =>
+            
+            var restartEngineThread = new Thread(() =>
             {
                 while (RunRestartLoop)
                 {
@@ -82,19 +83,25 @@ namespace AnalyzerEngineConsole
                     }
                 }
             });
+            restartEngineThread.Name = nameof(restartEngineThread);
 
-            Task.Run(() =>
+            var eventProcessorThread = new Thread(() =>
             {
                 var connection = new EventHubProcessor(builder.ToString(), EventHubName);
                 var recTask = connection.StartReceiver<EventProcessor>(storageConnection);
                 EventProcessor.Init(Engine, Logger, storageConnection, ConfigurationManager.AppSettings["OperationStorageTable"]);
                 recTask.Wait();
             });
+            eventProcessorThread.Name = nameof(eventProcessorThread);
+
             var gui = new GuiHandler(engingeProgram);
             var guiThread = new Thread(gui.Run);
             guiThread.IsBackground = true;
             guiThread.Start();
-
+            guiThread.Name = nameof(guiThread);
+            eventProcessorThread.Priority = ThreadPriority.AboveNormal;
+            eventProcessorThread.Start();
+            restartEngineThread.Start();
             while (engingeProgram.Running)
             {
                 
@@ -218,7 +225,7 @@ namespace AnalyzerEngineConsole
             Engine.OnStateChanged += HandleEngineStateChange;
             EventProcessor.OnUpdatedInfo += HandleEventProcessorInfo;
 
-            Task.Run(() =>
+            var messageThread = new Thread(() =>
             {
                 while (true)
                 {
@@ -245,14 +252,18 @@ namespace AnalyzerEngineConsole
                 }
             });
 
-            Task.Run(() =>
+            var snapshotThread = new Thread(() =>
             {
                 while (true)
                 {
                     UpdateSnapshotAnalyzerInfo();
-                    Task.Delay(4000).Wait();
+                    Thread.Sleep(4000);
                 }
             });
+            snapshotThread.Name = nameof(snapshotThread);
+            snapshotThread.Priority = ThreadPriority.BelowNormal;
+            messageThread.Start();
+            snapshotThread.Start();
         }
 
         private void HandleEngineStateChange(HealthAndAuditShared.State state)

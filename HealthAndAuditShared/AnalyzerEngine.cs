@@ -14,6 +14,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using SystemHealthExternalInterface;
 using HealthAndAuditShared.Observers;
@@ -69,9 +70,9 @@ namespace HealthAndAuditShared
             }
             foreach(var analyzer in Analyzers)
             {
-                analyzer.Value.StartAnalyzerTask();
+                analyzer.Value.StartAnalyzer();
             }
-            StartEngineTask();
+            StartEngine();
         }
         /// <summary>
         /// Stops the engine safely. Letting all current operations complete but will not allow the engine to start any now tasks.
@@ -153,14 +154,14 @@ namespace HealthAndAuditShared
         /// Starts the engine task.
         /// </summary>
         /// <returns></returns>
-        private void StartEngineTask()
+        private void StartEngine()
         {
-            Task.Run(() =>
+            var engineThread = new Thread(() =>
                           {
                               try
                               {
                                   ChangeState(State.Running);
-                                  AddMessage("Main engine Task started.");
+                                  AddMessage("Main engine thread started.");
                                   while (State == State.Running)
                                   {
                                       MainLoop();
@@ -180,12 +181,14 @@ namespace HealthAndAuditShared
                               catch (Exception ex)
                               {
                                   ChangeState(State.Stopped);
-                                  var msg = new AlarmMessage(AlarmLevel.Medium, AppDomain.CurrentDomain.FriendlyName, $"Exception in {nameof(AnalyzerEngine)}.{nameof(StartEngineTask)}. Engine is down. Engine will try to restart.", ex.Message);
+                                  var msg = new AlarmMessage(AlarmLevel.Medium, AppDomain.CurrentDomain.FriendlyName, $"Exception in {nameof(AnalyzerEngine)}.{nameof(StartEngine)}. Engine is down. Engine will try to restart.", ex.Message);
                                   AlarmMessageManager.RaiseAlarmAsync(msg).Wait();
                               }
                           });
 
-
+            engineThread.Priority = ThreadPriority.Highest;
+            engineThread.Name = nameof(engineThread);
+            engineThread.Start();
         }
 
         private void MainLoop()
@@ -215,7 +218,7 @@ namespace HealthAndAuditShared
                         if (analyzer.State == State.Stopped)
                         {
                             AddMessage($"{analyzer.ProgramName} analyzer not running. Starting.");
-                            analyzer.StartAnalyzerTask();
+                            analyzer.StartAnalyzer();
                         }
                         analyzer.AddEvent(fromQ);
                         AddMessage($"{fromQ.Result} event {fromQ.OperationName} added from {fromQ.AppInfo.ApplicationName}.");
@@ -229,7 +232,7 @@ namespace HealthAndAuditShared
                     {
                         analyser.OnAnalyzerInfo += AnalyzerChangeState;
                         AddMessage($"Added blank analyzer for {fromQ.AppInfo.ApplicationName} in {nameof(Analyzers)}.");
-                        analyser.StartAnalyzerTask();
+                        analyser.StartAnalyzer();
                         analyser.AddEvent(fromQ);
                     }
                     else
@@ -256,7 +259,7 @@ namespace HealthAndAuditShared
                 var rules = RuleStorage.GetRulesForApplication(analyzerProgramName);
                 AddRulesToAnalyzer(rules);
                 AddMessage($"{analyzer.ProgramName} analyzer starting.");
-                analyzer.StartAnalyzerTask();
+                analyzer.StartAnalyzer();
             });
         }
 
@@ -353,9 +356,10 @@ namespace HealthAndAuditShared
                 AnalyzerChangeState(State.ShuttingDown);
             }
 
-            public void StartAnalyzerTask()
+            public void StartAnalyzer()
             {
-                Task.Run(() =>
+
+                var analyzerThread = new Thread(() =>
                                {
                                    try                                   
                                    {
@@ -373,11 +377,14 @@ namespace HealthAndAuditShared
                                    catch (Exception ex)
                                    {
                                        AnalyzerChangeState(State.Stopped);
-                                       var msg = new AlarmMessage(AlarmLevel.Medium, AppDomain.CurrentDomain.FriendlyName, $"Exception in {nameof(ProgramAnalyzer)}.{nameof(StartAnalyzerTask)} for {ProgramName}.", ex.InnerException?.Message ?? ex.Message);
+                                       var msg = new AlarmMessage(AlarmLevel.Medium, AppDomain.CurrentDomain.FriendlyName, $"Exception in {nameof(ProgramAnalyzer)}.{nameof(StartAnalyzer)} for {ProgramName}.", ex.InnerException?.Message ?? ex.Message);
                                        AlarmMessageManager.RaiseAlarm(msg);
                                    }
                                }
                     );
+                analyzerThread.Priority = ThreadPriority.Highest;
+                analyzerThread.Name = nameof(analyzerThread) + "_" + ProgramName;
+                analyzerThread.Start();
             }
 
             private void MainLoop()
