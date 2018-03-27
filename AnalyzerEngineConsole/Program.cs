@@ -64,7 +64,7 @@ namespace AnalyzerEngineConsole
                         Engine.StartEngine(ruleStorage, alarmManger);
                         if (maxEngineRestarts <= engineStartCounter++)
                         {
-                            var message = $"AnalyzerEngine main task has been restared {engineStartCounter - 1} times. Engine is down and can not recover! Resetting start counter.";
+                            var message = $"AnalyzerEngine main task has been restarted {engineStartCounter - 1} times. Engine is down and can not recover! Resetting start counter.";
                             Logger.AddRow(message);
                             engingeProgram.MesseageOutputQueue.Enqueue(message);
                             var alarm = new AlarmMessage(AlarmLevel.High, AppDomain.CurrentDomain.FriendlyName, message);
@@ -94,6 +94,12 @@ namespace AnalyzerEngineConsole
             var guiThread = new Thread(gui.Run);
             guiThread.IsBackground = true;
             guiThread.Start();
+
+            while (engingeProgram.Running)
+            {
+                
+            }
+            WriteLine("Exiting");
         }
     }
 
@@ -102,8 +108,6 @@ namespace AnalyzerEngineConsole
     {
         public class State
         {
-            public long NumberDequeuedSinceStart { get; set; }
-            public long ErrorCount { get; set; }
             public string EngineState { get; set; }
             public DateTime StartTimeUtc { get; set; } = DateTime.UtcNow;
             public string EventHubState { get; set; }
@@ -186,7 +190,7 @@ namespace AnalyzerEngineConsole
                         break;
                     }
                     var rules = Engine.GetRulesLoadedInAnalyzer(args[1]);
-                    var loaded = rules.Aggregate("", (current, rule) => current + (rule + Environment.NewLine));
+                    var loaded = rules.Aggregate("", (current, rule) => current + rule + Environment.NewLine);
                     OutputQueue.Enqueue(loaded);
                     break;
                 case Commands.state:
@@ -196,9 +200,12 @@ namespace AnalyzerEngineConsole
                     OutputQueue.Enqueue(string.Join(Environment.NewLine, Engine.GetCurrentAnalyzersInfo().Select(item=> $"{item.Name} {item.State}: inQ: {item.EventsInQueue}. Loaded rules: {item.NumberOfRulesLoaded}.")));
                     break;
                 case Commands.restart:
-                    Program.RunRestartLoop = false;
-                    Engine.StopEngine();
-                    Running = false;
+                    Task.Run(() =>
+                    {
+                        Thread.CurrentThread.IsBackground = true;
+                        SnapShotGenerator.Reset();
+                        Engine.StopEngine();
+                    });
                     OutputQueue.Enqueue("Command sent to engine. See log for info.");
                     break;
             }
@@ -247,8 +254,6 @@ namespace AnalyzerEngineConsole
                 }
             });
         }
-
-      
 
         private void HandleEngineStateChange(HealthAndAuditShared.State state)
         {
