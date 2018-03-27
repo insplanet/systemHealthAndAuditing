@@ -118,6 +118,7 @@ namespace AnalyzerEngineConsole
             public string EngineState { get; set; }
             public DateTime StartTimeUtc { get; set; } = DateTime.UtcNow;
             public string EventHubState { get; set; }
+            public DateTime LastSnapshot { get; set; } = DateTime.MinValue;
 
             public override string ToString()
             {
@@ -252,18 +253,19 @@ namespace AnalyzerEngineConsole
                 }
             });
 
-            var snapshotThread = new Thread(() =>
+            var snapshotUpdateThread = new Thread(() =>
             {
                 while (true)
                 {
                     UpdateSnapshotAnalyzerInfo();
+                    CurrentState.LastSnapshot = SnapShotGenerator.LastFileGeneratedTime;
                     Thread.Sleep(4000);
                 }
             });
-            snapshotThread.Name = nameof(snapshotThread);
-            snapshotThread.Priority = ThreadPriority.BelowNormal;
+            snapshotUpdateThread.Name = nameof(snapshotUpdateThread);
+            snapshotUpdateThread.Priority = ThreadPriority.BelowNormal;
             messageThread.Start();
-            snapshotThread.Start();
+            snapshotUpdateThread.Start();
         }
 
         private void HandleEngineStateChange(HealthAndAuditShared.State state)

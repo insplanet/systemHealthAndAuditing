@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using HealthAndAuditShared;
 using Newtonsoft.Json;
@@ -13,6 +14,7 @@ namespace AnalyzerEngineConsole
 
     public class StatusSnapShotGenerator
     {
+        public DateTime LastFileGeneratedTime { get; private set; }
         private ConcurrentDictionary<string, AnalyzerEngine.AnalyzerInstanceInfo> AnalyzerInfo { get; } = new ConcurrentDictionary<string, AnalyzerEngine.AnalyzerInstanceInfo>();
         private FileLogger Logger { get; }
         private bool IsRunning { get; set; }
@@ -126,7 +128,7 @@ namespace AnalyzerEngineConsole
         {
             try
             {
-                Task.Run(() =>
+                var snapshotThread = new Thread(() =>
                 {
                     while (IsRunning)
                     {
@@ -148,10 +150,12 @@ namespace AnalyzerEngineConsole
                         {
                             sw.Write(fileContent);
                         }
-                        
-                        Task.Delay(FileGenerationIntervalSeconds * 1000).Wait();
+                        LastFileGeneratedTime = DateTime.UtcNow;
+                        Thread.Sleep(FileGenerationIntervalSeconds * 1000);
                     }
                 });
+                snapshotThread.Name = nameof(snapshotThread);
+                snapshotThread.Start();
             }
             catch (Exception e)
             {
