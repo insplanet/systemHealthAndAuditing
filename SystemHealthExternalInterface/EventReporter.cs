@@ -77,7 +77,8 @@ namespace SystemHealthExternalInterface
 
         public void ReportEvent(SystemEvent @event)
         {
-            Task.Run(async () => { await ReportEventAsync(@event); }).Wait();
+            var task = Task.Run(async () => { await ReportEventAsync(@event); });
+            task.Wait();
         }
 
         public async Task ReportEventAsync(SystemEvent @event)

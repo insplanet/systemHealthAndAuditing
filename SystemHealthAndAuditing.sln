@@ -26,6 +26,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SystemHealthExternalInterfa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EngineControl", "EngineControl\EngineControl.csproj", "{1FFAE187-687E-4905-A5E7-468BA4DBE948}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnalyzerEngineConsole", "AnalyzerEngineConsole\AnalyzerEngineConsole.csproj", "{6712B9B3-1FC5-4901-B7A6-D3A765506FC7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -68,8 +70,15 @@ Global
 		{1FFAE187-687E-4905-A5E7-468BA4DBE948}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1FFAE187-687E-4905-A5E7-468BA4DBE948}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1FFAE187-687E-4905-A5E7-468BA4DBE948}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6712B9B3-1FC5-4901-B7A6-D3A765506FC7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6712B9B3-1FC5-4901-B7A6-D3A765506FC7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6712B9B3-1FC5-4901-B7A6-D3A765506FC7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6712B9B3-1FC5-4901-B7A6-D3A765506FC7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {707709D8-FFDC-449B-9D29-09B3DAF871F9}
 	EndGlobalSection
 EndGlobal
