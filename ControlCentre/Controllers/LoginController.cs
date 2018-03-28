@@ -18,11 +18,10 @@ namespace ControlCentre.Controllers
             {
                 var cookie = new HttpCookie("validLogin");
                 HttpContext.Response.Cookies.Add(cookie);
-                Redirect(Url.Content("~/"));
+                return Redirect(Url.Content("~/"));
             }
             
             return View("login");
-            
         }
     }
 }

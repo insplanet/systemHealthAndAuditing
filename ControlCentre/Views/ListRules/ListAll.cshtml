@@ -1,4 +1,4 @@
-﻿@model List<HealthAndAuditShared.AnalyseRuleset>
+﻿@model List<AnalyzeRule>
 
 @{
     ViewBag.Title = "ListAll";
@@ -7,9 +7,9 @@
 <h2>ListAll</h2>
 
 @{
-    foreach(var analyseRuleset in Model.OrderBy(x => x.ApplicationName))
+    foreach(var analyseRuleset in Model.OrderBy(x => x.ProgramName))
     {
-        <div>@analyseRuleset.ApplicationName : @analyseRuleset.RuleName  <a href="/upsertrule/viewrule/@analyseRuleset.RuleID">Open</a></div>
+        <div>@analyseRuleset.ProgramName : @analyseRuleset.RuleName  <a href="/upsertrule/viewrule/@analyseRuleset.RuleID">Open</a></div>
 
     }
 }

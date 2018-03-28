@@ -1,5 +1,5 @@
 ﻿@using Newtonsoft.Json
-@model HealthAndAuditShared.AnalyseRuleset
+@model AnalyzeRule
 
 @{
     ViewBag.Title = "ruleview";
@@ -30,7 +30,7 @@
             if (Model != null)
             {
                 <div>
-                    Viewing rule: @Model.RuleName for @Model.ApplicationName
+                    Viewing rule: @Model.RuleName for @Model.ProgramName
                 </div>
                 <textarea name="serializedRule" style="margin: 0px; height: 300px; width: 500px;">@Html.Raw(JsonConvert.SerializeObject(Model).Replace(",\"", ",\r\n\""))</textarea>
             }

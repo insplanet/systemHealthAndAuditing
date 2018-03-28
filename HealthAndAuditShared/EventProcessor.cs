@@ -27,7 +27,7 @@ namespace HealthAndAuditShared
             return $"\t{DateTime.UtcNow}UTC\t{input}";
         }
 
-        private string id;
+        private string _id;
 
         private void AddNewInfo(string id, string info)
         {
@@ -50,8 +50,8 @@ namespace HealthAndAuditShared
 
         public Task OpenAsync(PartitionContext context)
         {
-            id = Guid.NewGuid().ToString();
-            AddNewInfo(id, "Open");
+            _id = Guid.NewGuid().ToString();
+            AddNewInfo(_id, "Open");
             return Task.FromResult<object>(null);
         }
 
@@ -64,16 +64,16 @@ namespace HealthAndAuditShared
                 throw new Exception("Processor not initialized. Run Init() before starting");
             }
 
-            AddNewInfo(id, "Processing");
+            AddNewInfo(_id, "Processing");
             var parsedData = messages.Select(eventData => Encoding.UTF8.GetString(eventData.GetBytes())).Select(JsonConvert.DeserializeObject<SystemEvent>).ToList();
             if (Engine.EngineIsRunning)
             {
                 await Engine.AddToMainQueue(parsedData);
-                AddNewInfo(id, parsedData.Count + " events added to engine");
+                AddNewInfo(_id, parsedData.Count + " events added to engine");
             }
             else
             {
-                AddNewInfo(id, "Engine is not running. Cannot add events. Aborting.");
+                AddNewInfo(_id, "Engine is not running. Cannot add events. Aborting.");
                 return;
             }
             try
@@ -110,7 +110,7 @@ namespace HealthAndAuditShared
                     }
                     batchOperation.Insert(operationResult);
                 }
-                AddNewInfo(id, "Running batches");
+                AddNewInfo(_id, "Running batches");
                 foreach (var batch in batches)
                 {
                     await Table.ExecuteBatchAsync(batch.Value);
@@ -120,17 +120,39 @@ namespace HealthAndAuditShared
             {
                 Logger.AddRow("Duplicate entry tried to be added to table storage.");
             }
+            catch (Exception ex) when (ex.Message.Contains("lease for the blob has expired"))
+            {
+                Logger.AddRow("Lease for the blob has expired");
+            }
+            catch (LeaseLostException)
+            {
+                Logger.AddRow("LeaseLostException");
+            }
             catch (Exception ex)
             {
-                AddNewInfo(id, "!ERROR! " + ex.Message);
+                AddNewInfo(_id, "!ERROR! " + ex.Message);
                 ErrorLogger.AddRow("!ERROR! In event processor");
                 ErrorLogger.AddRow(ex.ToString());
             }
             finally
             {
-                AddNewInfo(id, "Setting Checkpoint");
-                await context.CheckpointAsync();
-                AddNewInfo(id, "Checkpoint set");
+                AddNewInfo(_id, "Setting Checkpoint");
+                try
+                {
+                    await context.CheckpointAsync();
+                    AddNewInfo(_id, "Checkpoint set");
+                }
+                catch (Exception ex) when (ex.Message.Contains("lease for the blob has expired"))
+                {
+                    Logger.AddRow("Lease for the blob has expired");
+                    AddNewInfo(_id, "lease for the blob has expired");
+                }
+                catch (LeaseLostException)
+                {
+                    Logger.AddRow("LeaseLostException");
+                    AddNewInfo(_id, "LeaseLostException");
+                }
+             
             }
         }
 
@@ -152,11 +174,11 @@ namespace HealthAndAuditShared
 
         public async Task CloseAsync(PartitionContext context, CloseReason reason)
         {
-            AddNewInfo(id, "Closing");
+            AddNewInfo(_id, "Closing");
             if (reason == CloseReason.Shutdown)
             {
                 await context.CheckpointAsync();
-                AddNewInfo(id, "Closing, checkpoint set.");
+                AddNewInfo(_id, "Closing, checkpoint set.");
             }
         }
     }
