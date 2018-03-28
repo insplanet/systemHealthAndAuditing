@@ -83,7 +83,7 @@ namespace EngineControl
             {
                 var connection = new EventHubProcessor(builder.ToString(), EventHubName);
                 var recTask = connection.StartReceiver<EventProcessor>(storageConnection);
-                EventProcessor.Init(Engine, Logger, storageConnection, ConfigurationManager.AppSettings["OperationStorageTable"]);
+               // EventProcessor.Init(Engine, Logger, storageConnection, ConfigurationManager.AppSettings["OperationStorageTable"]);
                 recTask.Wait();
             });
 

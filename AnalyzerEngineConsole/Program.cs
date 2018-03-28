@@ -17,6 +17,7 @@ namespace AnalyzerEngineConsole
     internal class Program
     {
         public static FileLogger Logger { get; set; } = new FileLogger(maxIterations:10);
+        public static FileLogger ErrorLogger { get; set; } = new FileLogger(filePrefix:"ErrorLog_", maxIterations: 10);
         public static AnalyzerEngine Engine { get; set; } = new AnalyzerEngine();
         public static bool RunRestartLoop { get; set; } = true;
         public static string EventHubName { get; private set; }
@@ -35,20 +36,20 @@ namespace AnalyzerEngineConsole
         static void Main()
         {
             DeleteMenu(GetSystemMenu(GetConsoleWindow(), false), SC_CLOSE, MF_BYCOMMAND);
-            AnalyzerEngingeProgram engingeProgram = new AnalyzerEngingeProgram(Engine,Logger);
-
-            engingeProgram.SnapShotGenerator = new StatusSnapShotGenerator(ConfigurationManager.AppSettings["jsonPath"], Logger);
-
             var storageConnection = ConfigurationManager.AppSettings["AzureStorageConnectionString"];
             ServiceBusConnectionStringBuilder builder = new ServiceBusConnectionStringBuilder(ConfigurationManager.AppSettings["Microsoft.ServiceBus.ConnectionString.Listen"]);
-            
+            EventHubName = ConfigurationManager.AppSettings["EventHubName"];
+            var hubProcessor = new EventHubProcessor(builder.ToString(), EventHubName);
+            AnalyzerEngineProgram engineProgram = new AnalyzerEngineProgram(Engine,Logger,ErrorLogger, new StatusSnapShotGenerator(ConfigurationManager.AppSettings["jsonPath"], ErrorLogger), hubProcessor);
+
+           
             var alarmQueueConnS = ConfigurationManager.AppSettings["ServiceBus.Queue.Connectionstring"];
             var alarmQueueName = ConfigurationManager.AppSettings["ServiceBus.Queue.Name"];
 
             var alarmQueue = new ServiceBusConnection<AlarmMessage>(alarmQueueConnS, alarmQueueName);
             var alarmManger = new AlarmMessageManager(alarmQueue);
             var ruleStorage = new DocumentDBRuleStorage(ConfigurationManager.AppSettings["DocDBEndPointUrl"], ConfigurationManager.AppSettings["AuthorizationKey"], ConfigurationManager.AppSettings["RuleDatabaseId"], ConfigurationManager.AppSettings["RuleCollectionId"]);
-            EventHubName = ConfigurationManager.AppSettings["EventHubName"];
+            
             var engineStartCounter = 0;
             var maxEngineRestarts = 10;
             
@@ -67,7 +68,7 @@ namespace AnalyzerEngineConsole
                         {
                             var message = $"AnalyzerEngine main task has been restarted {engineStartCounter - 1} times. Engine is down and can not recover! Resetting start counter.";
                             Logger.AddRow(message);
-                            engingeProgram.MesseageOutputQueue.Enqueue(message);
+                            engineProgram.MesseageOutputQueue.Enqueue(message);
                             var alarm = new AlarmMessage(AlarmLevel.High, AppDomain.CurrentDomain.FriendlyName, message);
                             alarmManger.RaiseAlarm(alarm);
                             engineStartCounter = 0;
@@ -76,7 +77,7 @@ namespace AnalyzerEngineConsole
                         timer.Start();
                         while (!Engine.EngineIsRunning && timer.ElapsedMilliseconds < 20000)
                         {
-                            engingeProgram.MesseageOutputQueue.Enqueue("Awaiting engine start. Waited " + timer.ElapsedMilliseconds + " ms");
+                            engineProgram.MesseageOutputQueue.Enqueue("Awaiting engine start. Waited " + timer.ElapsedMilliseconds + " ms");
                             Task.Delay(1000).Wait();
                         }
                         timer.Reset();
@@ -84,17 +85,17 @@ namespace AnalyzerEngineConsole
                 }
             });
             restartEngineThread.Name = nameof(restartEngineThread);
+            restartEngineThread.IsBackground = true;
 
             var eventProcessorThread = new Thread(() =>
             {
-                var connection = new EventHubProcessor(builder.ToString(), EventHubName);
-                var recTask = connection.StartReceiver<EventProcessor>(storageConnection);
-                EventProcessor.Init(Engine, Logger, storageConnection, ConfigurationManager.AppSettings["OperationStorageTable"]);
+                var recTask = hubProcessor.StartReceiver<EventProcessor>(storageConnection);
+                EventProcessor.Init(Engine, Logger,ErrorLogger, storageConnection, ConfigurationManager.AppSettings["OperationStorageTable"]);
                 recTask.Wait();
             });
             eventProcessorThread.Name = nameof(eventProcessorThread);
 
-            var gui = new GuiHandler(engingeProgram);
+            var gui = new GuiHandler(engineProgram);
             var guiThread = new Thread(gui.Run);
             guiThread.IsBackground = true;
             guiThread.Start();
@@ -102,16 +103,11 @@ namespace AnalyzerEngineConsole
             eventProcessorThread.Priority = ThreadPriority.AboveNormal;
             eventProcessorThread.Start();
             restartEngineThread.Start();
-            while (engingeProgram.Running)
-            {
-                
-            }
-            WriteLine("Exiting");
         }
     }
 
 
-    public class AnalyzerEngingeProgram
+    public class AnalyzerEngineProgram
     {
         public class State
         {
@@ -135,7 +131,9 @@ namespace AnalyzerEngineConsole
         private MessageAggregator<string> MessageAggregator { get; } = new MessageAggregator<string>();
         public ConcurrentQueue<string> MesseageOutputQueue { get; set; } = new ConcurrentQueue<string>();
         private FileLogger Logger { get; }
+        private FileLogger ErrorLogger { get; }
         private AnalyzerEngine Engine { get;}
+        private EventHubProcessor EventHubProcessor { get;}
         private State CurrentState { get; } = new State();
         public bool Running { get; private set; } = true;
 
@@ -180,6 +178,8 @@ namespace AnalyzerEngineConsole
                     Program.RunRestartLoop = false;
                     Engine.StopEngine();
                     Running = false;
+                    EventHubProcessor.StopReceiver();
+                    SnapShotGenerator.Stop();
                     OutputQueue.Enqueue("Command sent to engine. See log for info.");
                     break;
                 case Commands.reloadrulesforanal:
@@ -205,7 +205,8 @@ namespace AnalyzerEngineConsole
                     OutputQueue.Enqueue(CurrentState.ToString());
                     break;
                 case Commands.showloadedanal:
-                    OutputQueue.Enqueue(string.Join(Environment.NewLine, Engine.GetCurrentAnalyzersInfo().Select(item=> $"{item.Name} {item.State}: inQ: {item.EventsInQueue}. Loaded rules: {item.NumberOfRulesLoaded}.")));
+                   OutputQueue.Enqueue(Environment.NewLine);
+                   OutputQueue.Enqueue(string.Join(Environment.NewLine, Engine.GetCurrentAnalyzersInfo().Select(item=> $"{item.Name}\t{item.State}:\tinQ: {item.EventsInQueue}.\tLoaded rules: {item.NumberOfRulesLoaded}.")));
                     break;
                 case Commands.restart:
                     Task.Run(() =>
@@ -219,11 +220,16 @@ namespace AnalyzerEngineConsole
             }
         }
 
-        public AnalyzerEngingeProgram(AnalyzerEngine engine ,FileLogger logger)
+        public AnalyzerEngineProgram(AnalyzerEngine engine ,FileLogger logger, FileLogger errorLogger, StatusSnapShotGenerator snapGen, EventHubProcessor eventHubProcessor)
         {
             Engine = engine;
             Logger = logger;
+            ErrorLogger = errorLogger;
+            SnapShotGenerator = snapGen;
+            EventHubProcessor = eventHubProcessor;
+            SnapShotGenerator.StartGenerator();
             Engine.OnStateChanged += HandleEngineStateChange;
+            Engine.OnReportException += HandleEngineException;
             EventProcessor.OnUpdatedInfo += HandleEventProcessorInfo;
 
             var messageThread = new Thread(() =>
@@ -264,8 +270,16 @@ namespace AnalyzerEngineConsole
             });
             snapshotUpdateThread.Name = nameof(snapshotUpdateThread);
             snapshotUpdateThread.Priority = ThreadPriority.BelowNormal;
+            snapshotUpdateThread.IsBackground = true;
             messageThread.Start();
+            messageThread.IsBackground = true;
             snapshotUpdateThread.Start();
+        }
+
+        private void HandleEngineException(string message, Exception exception)
+        {
+            ErrorLogger.AddRow(message);
+            ErrorLogger.AddRow(exception.ToString());
         }
 
         private void HandleEngineStateChange(HealthAndAuditShared.State state)
@@ -295,12 +309,12 @@ namespace AnalyzerEngineConsole
     }
     public class GuiHandler
     {
-        public GuiHandler(AnalyzerEngingeProgram realProgram)
+        public GuiHandler(AnalyzerEngineProgram realProgram)
         {
             RealProgram = realProgram;
         }
         private FileLogger OutputLog { get; } = new FileLogger(filePrefix: "OutputLog_");
-        private AnalyzerEngingeProgram RealProgram { get; }
+        private AnalyzerEngineProgram RealProgram { get; }
 
         public void Run()
         {

@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using HealthAndAuditShared;
 using Newtonsoft.Json;
 
@@ -14,10 +13,10 @@ namespace AnalyzerEngineConsole
 
     public class StatusSnapShotGenerator
     {
-        public DateTime LastFileGeneratedTime { get; private set; }
+        public DateTime LastFileGeneratedTime { get; private set; } = DateTime.MinValue;
         private ConcurrentDictionary<string, AnalyzerEngine.AnalyzerInstanceInfo> AnalyzerInfo { get; } = new ConcurrentDictionary<string, AnalyzerEngine.AnalyzerInstanceInfo>();
         private FileLogger Logger { get; }
-        private bool IsRunning { get; set; }
+        private bool ShallRun { get; set; }
         private DirectoryInfo LogFileFolder { get; }
         private int FileGenerationIntervalSeconds { get; }
         public StatusSnapShotGenerator(string fileSavePath, FileLogger logger, int fileGenerationIntervalSeconds = 5)
@@ -115,12 +114,15 @@ namespace AnalyzerEngineConsole
             return (ListToExport.ToList(),overflow);
         }
 
-
+        public void Stop()
+        {
+            ShallRun = false;
+        }
         public void StartGenerator()
         {
-            if (!IsRunning)
+            if (!ShallRun)
             {
-                IsRunning = true;
+                ShallRun = true;
                 Run();
             }
         }
@@ -130,7 +132,7 @@ namespace AnalyzerEngineConsole
             {
                 var snapshotThread = new Thread(() =>
                 {
-                    while (IsRunning)
+                    while (ShallRun)
                     {
                         SwitchList();
                         var snapToSave= new StatusSnapshot();
@@ -159,10 +161,10 @@ namespace AnalyzerEngineConsole
             }
             catch (Exception e)
             {
-                IsRunning = false;
+                ShallRun = false;
                 Logger.AddRow($"Exception in {nameof(StatusSnapShotGenerator)}.{nameof(Run)} method. {e}");
+                StartGenerator();
             }
-            StartGenerator();
         }
 
         private class StatusSnapshot

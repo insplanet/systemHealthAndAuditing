@@ -40,6 +40,14 @@ namespace HealthAndAuditShared
         public delegate void StateChanged(State state);
         public event StateChanged OnStateChanged;
 
+        public delegate void ReportException(string message, Exception exception);
+        public event ReportException OnReportException;
+
+        private void HandleAnalyzerException(string message, Exception exception)
+        {
+            OnReportException?.Invoke(message,exception);
+        }
+
         private void ChangeState(State newState)
         {
             State = newState;
@@ -181,8 +189,10 @@ namespace HealthAndAuditShared
                               catch (Exception ex)
                               {
                                   ChangeState(State.Stopped);
-                                  var msg = new AlarmMessage(AlarmLevel.Medium, AppDomain.CurrentDomain.FriendlyName, $"Exception in {nameof(AnalyzerEngine)}.{nameof(StartEngine)}. Engine is down. Engine will try to restart.", ex.Message);
-                                  AlarmMessageManager.RaiseAlarmAsync(msg).Wait();
+                                  var message = $"Exception in {nameof(AnalyzerEngine)}.{nameof(StartEngine)}. Engine is down. Engine will try to restart.";
+                                  OnReportException?.Invoke(message,ex);
+                                  var alarmMessage = new AlarmMessage(AlarmLevel.Medium, AppDomain.CurrentDomain.FriendlyName, message, ex.Message);
+                                  AlarmMessageManager.RaiseAlarmAsync(alarmMessage).Wait();
                               }
                           });
 
@@ -231,6 +241,7 @@ namespace HealthAndAuditShared
                     if (Analyzers.TryAdd(analyser.ProgramName, analyser))
                     {
                         analyser.OnAnalyzerInfo += AnalyzerChangeState;
+                        analyser.OnReportException += HandleAnalyzerException;
                         AddMessage($"Added blank analyzer for {fromQ.AppInfo.ApplicationName} in {nameof(Analyzers)}.");
                         analyser.StartAnalyzer();
                         analyser.AddEvent(fromQ);
@@ -305,6 +316,8 @@ namespace HealthAndAuditShared
             var analyzer = Analyzers.GetOrAdd(programName, new ProgramAnalyzer(AlarmMessageManager));
             analyzer.OnAnalyzerInfo -= AnalyzerChangeState;
             analyzer.OnAnalyzerInfo += AnalyzerChangeState;
+            analyzer.OnReportException -= HandleAnalyzerException;
+            analyzer.OnReportException += HandleAnalyzerException;
             return analyzer;
         }
 
@@ -333,6 +346,8 @@ namespace HealthAndAuditShared
 
             public delegate void AnalyzerInfo(string name, string info);
             public event AnalyzerInfo OnAnalyzerInfo;
+            public delegate void ReportException(string message, Exception exception);
+            public event ReportException OnReportException;
             private void AnalyzerChangeState(State state)
             {
                 State = state;
@@ -377,8 +392,10 @@ namespace HealthAndAuditShared
                                    catch (Exception ex)
                                    {
                                        AnalyzerChangeState(State.Stopped);
-                                       var msg = new AlarmMessage(AlarmLevel.Medium, AppDomain.CurrentDomain.FriendlyName, $"Exception in {nameof(ProgramAnalyzer)}.{nameof(StartAnalyzer)} for {ProgramName}.", ex.InnerException?.Message ?? ex.Message);
-                                       AlarmMessageManager.RaiseAlarm(msg);
+                                       var message = $"Exception in {nameof(ProgramAnalyzer)}.{nameof(StartAnalyzer)} for {ProgramName}.";
+                                       OnReportException?.Invoke(message, ex);
+                                       var alarmMessage = new AlarmMessage(AlarmLevel.Medium, AppDomain.CurrentDomain.FriendlyName,message, ex.InnerException?.Message ?? ex.Message);
+                                       AlarmMessageManager.RaiseAlarm(alarmMessage);
                                    }
                                }
                     );

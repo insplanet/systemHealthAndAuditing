@@ -18,6 +18,7 @@ namespace HealthAndAuditShared
         public static event NewInfo OnUpdatedInfo;
         private static ConcurrentDictionary<string, string> EventProcInfo { get;  } = new ConcurrentDictionary<string, string>();
         private static FileLogger Logger { get; set; }
+        private static FileLogger ErrorLogger { get; set; }
         private static AnalyzerEngine Engine { get; set; }
         private static string AzureStorageConnectionString { get; set; }
         private static string OperationStorageTableName { get; set; } 
@@ -36,10 +37,11 @@ namespace HealthAndAuditShared
 
         private static bool IsInitialized { get; set; }
 
-        public static void Init(AnalyzerEngine engine, FileLogger logger, string azureStorageConnectionString, string operationStorageTableName)
+        public static void Init(AnalyzerEngine engine, FileLogger logger, FileLogger errorLogger, string azureStorageConnectionString, string operationStorageTableName)
         {
             Engine = engine;
             Logger = logger;
+            ErrorLogger = errorLogger;
             AzureStorageConnectionString = azureStorageConnectionString;
             OperationStorageTableName = operationStorageTableName;
             IsInitialized = true;
@@ -121,8 +123,8 @@ namespace HealthAndAuditShared
             catch (Exception ex)
             {
                 AddNewInfo(id, "!ERROR! " + ex.Message);
-                Logger.AddRow("!ERROR! In event processor");
-                Logger.AddRow(ex.ToString());
+                ErrorLogger.AddRow("!ERROR! In event processor");
+                ErrorLogger.AddRow(ex.ToString());
             }
             finally
             {

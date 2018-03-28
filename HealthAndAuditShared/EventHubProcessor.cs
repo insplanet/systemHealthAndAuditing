@@ -19,6 +19,8 @@ namespace HealthAndAuditShared
     {
         public string Listen_EventHubConnectionstring { get; set; }
         private string EventHubPath { get; }
+
+        private EventProcessorHost EventProc { get; set; }
         public EventHubProcessor( string listenConnectionstring, string eventHubPath)
         {
             Listen_EventHubConnectionstring = listenConnectionstring;
@@ -32,7 +34,7 @@ namespace HealthAndAuditShared
             }
             var eventhubclient = EventHubClient.CreateFromConnectionString(Listen_EventHubConnectionstring, EventHubPath);
             var defaultGroup = eventhubclient.GetDefaultConsumerGroup();
-            var eventproc = new EventProcessorHost(AppDomain.CurrentDomain.FriendlyName, eventhubclient.Path, defaultGroup.GroupName, Listen_EventHubConnectionstring, storageConnection);
+            EventProc = new EventProcessorHost(AppDomain.CurrentDomain.FriendlyName, eventhubclient.Path, defaultGroup.GroupName, Listen_EventHubConnectionstring, storageConnection);
 
             var opt = new EventProcessorOptions
                       {
@@ -41,8 +43,18 @@ namespace HealthAndAuditShared
                           MaxBatchSize = 300
                       };
             opt.ExceptionReceived += (sender, e) => { Console.WriteLine(e.Exception); };
-            return eventproc.RegisterEventProcessorAsync<T>(opt);
+            return EventProc.RegisterEventProcessorAsync<T>(opt);
         }
+
+        public void StopReceiver()
+        {
+            var task = Task.Run(async () =>
+            {
+                await EventProc.UnregisterEventProcessorAsync();
+            });
+            task.Wait();
+        }
+
     }
 
 }
