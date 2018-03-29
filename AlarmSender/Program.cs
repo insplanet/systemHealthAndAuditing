@@ -25,12 +25,8 @@ namespace AlarmSender
         {
         
             Functions.ChannelHolder = new AlarmChannelHolder();
-            //Functions.ChannelHolder.AddChannel(AlarmLevel.High, new SlackClient(CloudConfigurationManager.GetSetting("SlackHook")));
+            Functions.ChannelHolder.AddChannel(AlarmLevel.High, new SlackClient(CloudConfigurationManager.GetSetting("SlackHook")));
             
-
-            Functions.ChannelHolder.AddChannel(AlarmLevel.Low, new SlackClient("https://hooks.slack.com/services/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"));
-            Functions.ChannelHolder.AddChannel(AlarmLevel.Medium, new SlackClient("https://hooks.slack.com/services/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"));
-            Functions.ChannelHolder.AddChannel(AlarmLevel.High, new SlackClient("https://hooks.slack.com/services/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"));
             Functions.FloodControl = new FloodControl(Functions.ChannelHolder, true);
             JobHostConfiguration config = new JobHostConfiguration();
             config.UseServiceBus();

@@ -206,7 +206,7 @@ namespace AnalyzerEngineConsole
                     break;
                 case Commands.showloadedanal:
                    OutputQueue.Enqueue(Environment.NewLine);
-                   OutputQueue.Enqueue(string.Join(Environment.NewLine, Engine.GetCurrentAnalyzersInfo().Select(item=> $"{item.Name}\t{item.State}:\tinQ: {item.EventsInQueue}.\tLoaded rules: {item.NumberOfRulesLoaded}.")));
+                   OutputQueue.Enqueue(string.Join(Environment.NewLine, Engine.GetCurrentAnalyzersInfo().Select(item=> $"{item.Name}\t\t{item.State}\tin queue {item.EventsInQueue}.\tLoaded rules {item.NumberOfRulesLoaded}.")));
                     break;
                 case Commands.restart:
                     Task.Run(() =>
