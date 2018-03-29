@@ -147,6 +147,11 @@ namespace HealthAndAuditShared
                     Logger.AddRow("Lease for the blob has expired");
                     AddNewInfo(_id, "lease for the blob has expired");
                 }
+                catch (Exception ex) when (ex.Message.Contains("System.TimeoutException"))
+                {
+                    Logger.AddRow("System.TimeoutException");
+                    AddNewInfo(_id, "System.TimeoutException");
+                }
                 catch (LeaseLostException)
                 {
                     Logger.AddRow("LeaseLostException");
@@ -159,8 +164,7 @@ namespace HealthAndAuditShared
         public string GetNewBatchName(string orginalName, Dictionary<string, string> names)
         {
             const string addon = "X";
-            string currentAlias;
-            if (names.TryGetValue(orginalName, out currentAlias))
+            if (names.TryGetValue(orginalName, out var currentAlias))
             {
                 names[orginalName] = currentAlias + addon;
             }

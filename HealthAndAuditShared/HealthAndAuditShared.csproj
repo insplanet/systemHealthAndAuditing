@@ -82,6 +82,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AlarmChannelsHolder.cs" />
+    <Compile Include="AlarmChannels\EmailAlarmChannel.cs" />
     <Compile Include="AlarmMessageManager.cs" />
     <Compile Include="AnalyzeRule.cs" />
     <Compile Include="AzureStorageManager.cs" />
