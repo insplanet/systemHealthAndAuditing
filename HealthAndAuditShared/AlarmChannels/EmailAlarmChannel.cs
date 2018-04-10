@@ -4,9 +4,9 @@ namespace HealthAndAuditShared.AlarmChannels
 {
     public class EmailAlarmChannel : IAlarmChannel
     {
-        private string _sendToAdress;
-        private string _sendFromAdress;
-        private SmtpClient _smtpClient;
+        private readonly string _sendToAdress;
+        private readonly string _sendFromAdress;
+        private readonly SmtpClient _smtpClient;
         public EmailAlarmChannel(string sendToAdress, string sendFromAdress, SmtpClient smtpClient)
         {
             _sendToAdress = sendToAdress;

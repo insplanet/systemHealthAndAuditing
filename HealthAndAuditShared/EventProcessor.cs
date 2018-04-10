@@ -16,12 +16,12 @@ namespace HealthAndAuditShared
     {
         public delegate void NewInfo(ConcurrentDictionary<string, string> info);
         public static event NewInfo OnUpdatedInfo;
-        private static ConcurrentDictionary<string, string> EventProcInfo { get;  } = new ConcurrentDictionary<string, string>();
+        private static ConcurrentDictionary<string, string> EventProcInfo { get; } = new ConcurrentDictionary<string, string>();
         private static FileLogger Logger { get; set; }
         private static FileLogger ErrorLogger { get; set; }
         private static AnalyzerEngine Engine { get; set; }
         private static string AzureStorageConnectionString { get; set; }
-        private static string OperationStorageTableName { get; set; } 
+        private static string OperationStorageTableName { get; set; }
         private static string TimeStampThis(string input)
         {
             return $"\t{DateTime.UtcNow}UTC\t{input}";
@@ -29,9 +29,15 @@ namespace HealthAndAuditShared
 
         private string _id;
 
-        private void AddNewInfo(string id, string info)
+        private static void AddNewInfo(string id, string info)
         {
             EventProcInfo[id] = TimeStampThis(info);
+            OnUpdatedInfo?.Invoke(EventProcInfo);
+        }
+
+        private void RemoveInfo(string id)
+        {
+            EventProcInfo.TryRemove(id, out _);
             OnUpdatedInfo?.Invoke(EventProcInfo);
         }
 
@@ -47,7 +53,6 @@ namespace HealthAndAuditShared
             IsInitialized = true;
         }
 
-
         public Task OpenAsync(PartitionContext context)
         {
             _id = Guid.NewGuid().ToString();
@@ -58,7 +63,7 @@ namespace HealthAndAuditShared
         public async Task ProcessEventsAsync(PartitionContext context, IEnumerable<EventData> messages)
         {
 
-            if(!IsInitialized)
+            if (!IsInitialized)
             {
                 Logger.AddRow("Processor not initialized. Throwing exception.");
                 throw new Exception("Processor not initialized. Run Init() before starting");
@@ -79,15 +84,14 @@ namespace HealthAndAuditShared
             try
             {
                 var storageMan = new AzureStorageManager(AzureStorageConnectionString);
-                CloudTable Table = storageMan.GetTableReference(OperationStorageTableName);
+                CloudTable table = storageMan.GetTableReference(OperationStorageTableName);
 
                 var batches = new Dictionary<string, TableBatchOperation>();
                 var batchNames = new Dictionary<string, string>();
                 const int maxOps = Microsoft.WindowsAzure.Storage.Table.Protocol.TableConstants.TableServiceBatchMaximumOperations;
                 foreach (var operationResult in parsedData)
                 {
-                    string batchName;
-                    if (!batchNames.TryGetValue(operationResult.PartitionKey, out batchName))
+                    if (!batchNames.TryGetValue(operationResult.PartitionKey, out var batchName))
                     {
                         batchName = operationResult.PartitionKey;
                     }
@@ -113,7 +117,7 @@ namespace HealthAndAuditShared
                 AddNewInfo(_id, "Running batches");
                 foreach (var batch in batches)
                 {
-                    await Table.ExecuteBatchAsync(batch.Value);
+                    await table.ExecuteBatchAsync(batch.Value);
                 }
             }
             catch (Exception ex) when (ex.Message.Contains("The specified entity already exists"))
@@ -123,10 +127,12 @@ namespace HealthAndAuditShared
             catch (Exception ex) when (ex.Message.Contains("lease for the blob has expired"))
             {
                 Logger.AddRow("Lease for the blob has expired");
+                RemoveInfo(_id);
             }
             catch (LeaseLostException)
             {
                 Logger.AddRow("LeaseLostException");
+                RemoveInfo(_id);
             }
             catch (Exception ex)
             {
@@ -145,19 +151,19 @@ namespace HealthAndAuditShared
                 catch (Exception ex) when (ex.Message.Contains("lease for the blob has expired"))
                 {
                     Logger.AddRow("Lease for the blob has expired");
-                    AddNewInfo(_id, "lease for the blob has expired");
+                    RemoveInfo(_id);
                 }
                 catch (Exception ex) when (ex.Message.Contains("System.TimeoutException"))
                 {
                     Logger.AddRow("System.TimeoutException");
-                    AddNewInfo(_id, "System.TimeoutException");
+                    RemoveInfo(_id);
                 }
                 catch (LeaseLostException)
                 {
                     Logger.AddRow("LeaseLostException");
-                    AddNewInfo(_id, "LeaseLostException");
+                    RemoveInfo(_id);
                 }
-             
+
             }
         }
 

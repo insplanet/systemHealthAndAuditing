@@ -42,7 +42,9 @@ namespace HealthAndAuditShared
                           PrefetchCount = 300,
                           MaxBatchSize = 300
                       };
-            opt.ExceptionReceived += (sender, e) => { Console.WriteLine(e.Exception); };
+
+            var errorLogger = new FileLogger(filePrefix: "EventProcessorUnhandledExceptions_");
+            opt.ExceptionReceived += (sender, e) => { errorLogger.AddRow(e.ToString()); };
             return EventProc.RegisterEventProcessorAsync<T>(opt);
         }
 

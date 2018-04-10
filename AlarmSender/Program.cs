@@ -10,7 +10,10 @@
 *	Contributors: Mikael Axblom, Fredrik Lindgren										*
 *****************************************************************************************/
 
+using System.Net;
+using System.Net.Mail;
 using HealthAndAuditShared;
+using HealthAndAuditShared.AlarmChannels;
 using Microsoft.Azure;
 using Microsoft.Azure.WebJobs;
 
@@ -23,10 +26,21 @@ namespace AlarmSender
         // AzureWebJobsDashboard and AzureWebJobsStorage
         static void Main()
         {
-        
             Functions.ChannelHolder = new AlarmChannelHolder();
-            Functions.ChannelHolder.AddChannel(AlarmLevel.High, new SlackClient(CloudConfigurationManager.GetSetting("SlackHook")));
+
+            NetworkCredential creds = new NetworkCredential(CloudConfigurationManager.GetSetting("smtpuser"), CloudConfigurationManager.GetSetting("smtppwd"));
+            var smtp = new SmtpClient(CloudConfigurationManager.GetSetting("smtpadress"), int.Parse(CloudConfigurationManager.GetSetting("smtpport"))) { Credentials = creds, EnableSsl = true };
             
+            var lowMailChannel = new EmailAlarmChannel(CloudConfigurationManager.GetSetting("sendLowmailto"), CloudConfigurationManager.GetSetting("sendMailFrom"), smtp);
+            var mediumMailChannel = new EmailAlarmChannel(CloudConfigurationManager.GetSetting("sendMediummailto"), CloudConfigurationManager.GetSetting("sendMailFrom"), smtp);
+            var highMailChannel = new EmailAlarmChannel(CloudConfigurationManager.GetSetting("sendHighmailto"), CloudConfigurationManager.GetSetting("sendMailFrom"), smtp);
+
+            Functions.ChannelHolder.AddChannel(AlarmLevel.Low, lowMailChannel);
+            Functions.ChannelHolder.AddChannel(AlarmLevel.Medium, mediumMailChannel);
+            Functions.ChannelHolder.AddChannel(AlarmLevel.High, highMailChannel);
+
+            Functions.ChannelHolder.AddChannel(AlarmLevel.High, new SlackClient(CloudConfigurationManager.GetSetting("SlackHook")));
+
             Functions.FloodControl = new FloodControl(Functions.ChannelHolder, true);
             JobHostConfiguration config = new JobHostConfiguration();
             config.UseServiceBus();
