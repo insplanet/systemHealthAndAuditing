@@ -37,6 +37,10 @@
                 @Html.Raw(ViewBag.objectDump)
             </div>
         }
+        else
+        {
+            <span>Model was null</span>
+        }
         <br />
         @if (ViewBag.pageException != null)
         {

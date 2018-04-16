@@ -89,7 +89,7 @@ namespace HealthAndAuditShared
         /// <param name="maxFilesize">The maximum filesize in bytes before new file iteration.</param>
         /// <param name="daysBeforeNewFile">The maximum days before new file iteration</param>
         /// <exception cref="System.IO.DirectoryNotFoundException">Can not find  + logFileFolderPath</exception>
-        public FileLogger(string logFileFolderPath = "", string filePrefix = "LogFile_", bool async = false, uint maxIterations = 4, uint maxFilesize = 1024 * 10000, uint daysBeforeNewFile = 7)
+        public FileLogger(string logFileFolderPath = "", string filePrefix = "LogFile_", bool async = false, uint maxIterations = 8, uint maxFilesize = 1024 * 5000, uint daysBeforeNewFile = 7)
         {
             LogFilePrefix = filePrefix;
             MaxIterations = maxIterations;
@@ -288,7 +288,7 @@ namespace HealthAndAuditShared
         private static void TryWrite(string path, string row)
         {
             var writeFailed = true;
-            var writeAttempts = 10;
+            var writeAttempts = 20;
             for (int i = 0; i < writeAttempts; i++)
             {
                 if (WriteRowToFile(path, row))

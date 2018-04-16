@@ -31,7 +31,17 @@ namespace ControlCentre.Controllers
         {
             ViewBag.documentid = id;
             SystemEvent opResult;
-            return GetDocument(id, out opResult) ? View("docview",opResult) : View("docview");
+            if (GetDocument(id, out opResult))
+            {
+                return View("docview", opResult);
+
+            }
+            else
+            {
+                var errorInfo = new SystemEvent(SystemEvent.OperationResult.Failure);
+                errorInfo.OtherInfo = "ERROR in ControlCentre itself. Could not load the requested document.";
+                return View("docview",errorInfo);
+            }
         }
 
         private bool GetDocument(string documentID, out SystemEvent systemEvent)

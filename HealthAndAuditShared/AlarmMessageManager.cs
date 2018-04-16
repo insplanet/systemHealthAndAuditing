@@ -52,7 +52,15 @@ namespace HealthAndAuditShared
         }
         public void RaiseAlarm(AlarmMessage message)
         {
-            Queue.SendMessage(message);
+            try
+            {
+                Queue.SendMessage(message);
+            }
+            catch (Exception)
+            {
+                //retry once;
+                Queue.SendMessage(message);
+            }
         }
 
         public async Task RaiseAlarmAsync(AlarmMessage message)
