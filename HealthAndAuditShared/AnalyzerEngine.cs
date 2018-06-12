@@ -192,7 +192,7 @@ namespace HealthAndAuditShared
                                   var message = $"Exception in {nameof(AnalyzerEngine)}.{nameof(StartEngine)}. Engine is down. Engine will try to restart.";
                                   OnReportException?.Invoke(message,ex);
                                   var alarmMessage = new AlarmMessage(AlarmLevel.Medium, AppDomain.CurrentDomain.FriendlyName, message, ex.Message);
-                                  AlarmMessageManager.RaiseAlarmAsync(alarmMessage).Wait();
+                                  AlarmMessageManager.RaiseAlarm(alarmMessage);
                               }
                           });
 

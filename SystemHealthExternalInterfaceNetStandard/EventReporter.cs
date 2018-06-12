@@ -49,9 +49,9 @@ namespace SystemHealthExternalInterface
         /// </summary>
         public void Init(string sendConnectionstring, string eventHubPath, string cosmosendpoint, string cosmosauthkey, string cosmosdatabasename, string cosmoscollectionName)
         {
-            SendEventHubConnectionstring = sendConnectionstring;
-            EventHubPath = eventHubPath;
-            EventClient = EventHubClient.CreateFromConnectionString(SendEventHubConnectionstring, EventHubPath);
+        //    SendEventHubConnectionstring = sendConnectionstring;
+        //    EventHubPath = eventHubPath;
+        //    EventClient = EventHubClient.CreateFromConnectionString(SendEventHubConnectionstring, EventHubPath);
             CosmosClient = new DocumentClient(new Uri(cosmosendpoint), cosmosauthkey,
             new ConnectionPolicy
             {
@@ -63,24 +63,24 @@ namespace SystemHealthExternalInterface
             CosmosCollectionName = cosmoscollectionName;
         }
 
-        /// <summary>
-        /// Create a new reporter and read connection info from app.config ("Microsoft.ServiceBus.ConnectionString.Send", "EventHubPath")
-        /// </summary>
-        public void Init()
-        {
-            SendEventHubConnectionstring = ConfigurationManager.AppSettings["Microsoft.ServiceBus.ConnectionString.Send"];
-            EventHubPath = ConfigurationManager.AppSettings["EventHubPath"];
-            CosmosClient = new DocumentClient(new Uri(ConfigurationManager.AppSettings["EventCosmosEndpoint"]), ConfigurationManager.AppSettings["EventCosmosAuthkey"],
-                new ConnectionPolicy
-                {
-                    ConnectionMode = ConnectionMode.Direct,
-                    ConnectionProtocol = Protocol.Tcp
-                });
-            CosmosClient.OpenAsync();
-            CosmosDatabaseName = ConfigurationManager.AppSettings["EventCosmosDBname"];
-            CosmosCollectionName = ConfigurationManager.AppSettings["EventCosmosCollectionName"];
-            EventClient = EventHubClient.CreateFromConnectionString(SendEventHubConnectionstring, EventHubPath);
-        }
+        ///// <summary>
+        ///// Create a new reporter and read connection info from app.config ("Microsoft.ServiceBus.ConnectionString.Send", "EventHubPath")
+        ///// </summary>
+        //public void Init()
+        //{
+        //    SendEventHubConnectionstring = ConfigurationManager.AppSettings["Microsoft.ServiceBus.ConnectionString.Send"];
+        //    EventHubPath = ConfigurationManager.AppSettings["EventHubPath"];
+        //    CosmosClient = new DocumentClient(new Uri(ConfigurationManager.AppSettings["EventCosmosEndpoint"]), ConfigurationManager.AppSettings["EventCosmosAuthkey"],
+        //        new ConnectionPolicy
+        //        {
+        //            ConnectionMode = ConnectionMode.Direct,
+        //            ConnectionProtocol = Protocol.Tcp
+        //        });
+        //    CosmosClient.OpenAsync();
+        //    CosmosDatabaseName = ConfigurationManager.AppSettings["EventCosmosDBname"];
+        //    CosmosCollectionName = ConfigurationManager.AppSettings["EventCosmosCollectionName"];
+        //    EventClient = EventHubClient.CreateFromConnectionString(SendEventHubConnectionstring, EventHubPath);
+        //}
 
         private async Task SendEventToCosmos(SystemEvent @event)
         {
@@ -114,9 +114,9 @@ namespace SystemHealthExternalInterface
                 @event.PartitionKey  = @event.AppInfo.ApplicationName = OverrideApplicationNameWith;
             }
             var toCosmos = SendEventToCosmos(@event);
-            var toAnalyzer = EventClient.SendAsync(new EventData(Encoding.UTF8.GetBytes(Serialise(@event))));
+            //var toAnalyzer = EventClient.SendAsync(new EventData(Encoding.UTF8.GetBytes(Serialise(@event))));
             await toCosmos;
-            await toAnalyzer;
+            //await toAnalyzer;
         }
 
         public async Task ReportEventBatchAsync(List<SystemEvent> events)

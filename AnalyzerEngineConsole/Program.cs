@@ -16,7 +16,7 @@ namespace AnalyzerEngineConsole
 {
     internal class Program
     {
-        public static FileLogger Logger { get; set; } = new FileLogger(maxIterations:10);
+        public static FileLogger Logger { get; set; } = new FileLogger(maxIterations:10, async:true);
         public static FileLogger ErrorLogger { get; set; } = new FileLogger(filePrefix:"ErrorLog_", maxIterations: 10);
         public static AnalyzerEngine Engine { get; set; } = new AnalyzerEngine();
         public static bool RunRestartLoop { get; set; } = true;

@@ -11,6 +11,7 @@
 *****************************************************************************************/
 using System;
 using System.Threading.Tasks;
+using Microsoft.ServiceBus;
 using Microsoft.ServiceBus.Messaging;
 
 namespace HealthAndAuditShared
@@ -90,7 +91,10 @@ namespace HealthAndAuditShared
         {
             var factory = MessagingFactory.CreateFromConnectionString(connectionString);
             MessageSender = factory.CreateMessageSender(queueName);
+            MessageSender.RetryPolicy = RetryPolicy.Default;
             MessageReceiver = factory.CreateMessageReceiver(queueName);
+            MessageReceiver.RetryPolicy = RetryPolicy.Default;
+            
         }
         //todo varna om meddelande för stort
         public void SendMessage(T message)

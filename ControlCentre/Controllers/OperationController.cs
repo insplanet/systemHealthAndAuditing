@@ -54,6 +54,10 @@ namespace ControlCentre.Controllers
                 var splitID = SystemEvent.DecodeIDToPartitionAndRowKey(documentID);
                 var op = TableOperation.Retrieve<SystemEvent>(splitID.Item1, splitID.Item2);
                 var doc = table.Execute(op);
+                if (doc == null)
+                {
+                    return false;
+                }
                 systemEvent = (SystemEvent)doc.Result;
                 ViewBag.pageException = HelperMethods.FormatException(systemEvent.CaughtException);
                 ViewBag.objectDump = HelperMethods.GetObjectDump(systemEvent.OperationParameters);
