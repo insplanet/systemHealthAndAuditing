@@ -72,7 +72,7 @@ namespace HealthAndAuditShared
             var parsedData = messages.Select(eventData => Encoding.UTF8.GetString(eventData.GetBytes())).Select(JsonConvert.DeserializeObject<SystemEvent>).ToList();
             if (Engine.EngineIsRunning)
             {
-                //await Engine.AddToMainQueue(parsedData);
+                await Engine.AddToMainQueue(parsedData);
                 AddNewInfo(_id, parsedData.Count + " events added to engine");
             }
             else

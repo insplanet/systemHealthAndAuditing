@@ -43,8 +43,9 @@ namespace HealthAndAuditShared
                           MaxBatchSize = 50
                       };
 
-            var errorLogger = new FileLogger(filePrefix: "EventProcessorUnhandledExceptions_");
+            
             opt.ExceptionReceived += (sender, e) => {
+                var errorLogger = new FileLogger(filePrefix: "EventProcessorUnhandledExceptions_");
                 errorLogger.AddRow(sender.ToString() +Environment.NewLine+ e.ToString() + Environment.NewLine + e.Exception.ToString());
             };
             return EventProc.RegisterEventProcessorAsync<T>(opt);
