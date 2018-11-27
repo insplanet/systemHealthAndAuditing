@@ -46,7 +46,7 @@ namespace HealthAndAuditShared
             
             opt.ExceptionReceived += (sender, e) => {
                 var errorLogger = new FileLogger(filePrefix: "EventProcessorUnhandledExceptions_");
-                errorLogger.AddRow(sender.ToString() +Environment.NewLine+ e.ToString() + Environment.NewLine + e.Exception.ToString());
+                errorLogger.AddRow(sender?.ToString() ?? "Sender was null" +Environment.NewLine+ e?.ToString() ?? "e was null" + Environment.NewLine + e?.Exception?.ToString() ?? "e.exception was null");
             };
             return EventProc.RegisterEventProcessorAsync<T>(opt);
         }
