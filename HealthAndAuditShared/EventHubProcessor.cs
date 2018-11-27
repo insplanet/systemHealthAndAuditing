@@ -39,12 +39,14 @@ namespace HealthAndAuditShared
             var opt = new EventProcessorOptions
                       {
                           InitialOffsetProvider = partitionId => DateTime.UtcNow.AddHours(-1),
-                          PrefetchCount = 300,
-                          MaxBatchSize = 300
+                          PrefetchCount = 50,
+                          MaxBatchSize = 50
                       };
 
             var errorLogger = new FileLogger(filePrefix: "EventProcessorUnhandledExceptions_");
-            opt.ExceptionReceived += (sender, e) => { errorLogger.AddRow(e.ToString()); };
+            opt.ExceptionReceived += (sender, e) => {
+                errorLogger.AddRow(sender.ToString() +Environment.NewLine+ e.ToString() + Environment.NewLine + e.Exception.ToString());
+            };
             return EventProc.RegisterEventProcessorAsync<T>(opt);
         }
 

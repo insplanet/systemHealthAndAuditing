@@ -49,7 +49,9 @@ namespace AnalyzerEngineConsole
             var alarmQueue = new ServiceBusConnection<AlarmMessage>(alarmQueueConnS, alarmQueueName);
             var alarmManger = new AlarmMessageManager(alarmQueue);
             var ruleStorage = new DocumentDBRuleStorage(ConfigurationManager.AppSettings["DocDBEndPointUrl"], ConfigurationManager.AppSettings["AuthorizationKey"], ConfigurationManager.AppSettings["RuleDatabaseId"], ConfigurationManager.AppSettings["RuleCollectionId"]);
-            
+
+            var eventStore = new SQLEventStore(Logger, ConfigurationManager.AppSettings["sqleventstoreConnection"]);
+
             var engineStartCounter = 0;
             var maxEngineRestarts = 10;
             
@@ -90,7 +92,7 @@ namespace AnalyzerEngineConsole
             var eventProcessorThread = new Thread(() =>
             {
                 var recTask = hubProcessor.StartReceiver<EventProcessor>(storageConnection);
-                EventProcessor.Init(Engine, Logger,ErrorLogger, storageConnection, ConfigurationManager.AppSettings["OperationStorageTable"]);
+                EventProcessor.Init(Engine, Logger,ErrorLogger, eventStore);
                 recTask.Wait();
             });
             eventProcessorThread.Name = nameof(eventProcessorThread);
@@ -136,8 +138,7 @@ namespace AnalyzerEngineConsole
         private EventHubProcessor EventHubProcessor { get;}
         private State CurrentState { get; } = new State();
         public bool Running { get; private set; } = true;
-
-        [SuppressMessage("ReSharper", "InconsistentNaming")]
+                
         public enum Commands
         {
             help,

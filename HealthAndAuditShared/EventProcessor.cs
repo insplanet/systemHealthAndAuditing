@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.ServiceBus.Messaging;
-using Microsoft.WindowsAzure.Storage.Table;
+
 using Newtonsoft.Json;
 using SystemHealthExternalInterface;
 
@@ -20,8 +20,8 @@ namespace HealthAndAuditShared
         private static FileLogger Logger { get; set; }
         private static FileLogger ErrorLogger { get; set; }
         private static AnalyzerEngine Engine { get; set; }
-        private static string AzureStorageConnectionString { get; set; }
-        private static string OperationStorageTableName { get; set; }
+        
+        private static IEventStore EventStore { get; set; }
         private static string TimeStampThis(string input)
         {
             return $"\t{DateTime.UtcNow}UTC\t{input}";
@@ -43,13 +43,12 @@ namespace HealthAndAuditShared
 
         private static bool IsInitialized { get; set; }
 
-        public static void Init(AnalyzerEngine engine, FileLogger logger, FileLogger errorLogger, string azureStorageConnectionString, string operationStorageTableName)
+        public static void Init(AnalyzerEngine engine, FileLogger logger, FileLogger errorLogger, IEventStore eventStore)
         {
             Engine = engine;
             Logger = logger;
             ErrorLogger = errorLogger;
-            AzureStorageConnectionString = azureStorageConnectionString;
-            OperationStorageTableName = operationStorageTableName;
+            EventStore = eventStore;
             IsInitialized = true;
         }
 
@@ -73,7 +72,7 @@ namespace HealthAndAuditShared
             var parsedData = messages.Select(eventData => Encoding.UTF8.GetString(eventData.GetBytes())).Select(JsonConvert.DeserializeObject<SystemEvent>).ToList();
             if (Engine.EngineIsRunning)
             {
-                await Engine.AddToMainQueue(parsedData);
+                //await Engine.AddToMainQueue(parsedData);
                 AddNewInfo(_id, parsedData.Count + " events added to engine");
             }
             else
@@ -83,56 +82,15 @@ namespace HealthAndAuditShared
             }
             try
             {
-                var storageMan = new AzureStorageManager(AzureStorageConnectionString);
-                CloudTable table = storageMan.GetTableReference(OperationStorageTableName);
-
-                var batches = new Dictionary<string, TableBatchOperation>();
-                var batchNames = new Dictionary<string, string>();
-                const int maxOps = Microsoft.WindowsAzure.Storage.Table.Protocol.TableConstants.TableServiceBatchMaximumOperations;
-                foreach (var operationResult in parsedData)
+                var workInfo = await EventStore.StoreEventsAsync(parsedData);
+                if (string.IsNullOrEmpty(workInfo))
                 {
-                    if (!batchNames.TryGetValue(operationResult.PartitionKey, out var batchName))
-                    {
-                        batchName = operationResult.PartitionKey;
-                    }
-                    TableBatchOperation batchOperation;
-                    if (!batches.ContainsKey(batchName))
-                    {
-                        batchOperation = new TableBatchOperation();
-                        batches.Add(batchName, batchOperation);
-                    }
-                    else
-                    {
-                        batches.TryGetValue(batchName, out batchOperation);
-                    }
-                    Debug.Assert(batchOperation != null, "Could not find batchOperation in Dictionary.");
-
-                    if (batchOperation.Count == maxOps)
-                    {
-                        batchOperation = new TableBatchOperation();
-                        batches.Add(GetNewBatchName(operationResult.PartitionKey, batchNames), batchOperation);
-                    }
-                    batchOperation.Insert(operationResult);
+                    RemoveInfo(_id);
                 }
-                AddNewInfo(_id, "Running batches");
-                foreach (var batch in batches)
+                else
                 {
-                    await table.ExecuteBatchAsync(batch.Value);
+                    AddNewInfo(_id, workInfo);
                 }
-            }
-            catch (Exception ex) when (ex.Message.Contains("The specified entity already exists"))
-            {
-                Logger.AddRow("Duplicate entry tried to be added to table storage.");
-            }
-            catch (Exception ex) when (ex.Message.Contains("lease for the blob has expired"))
-            {
-                Logger.AddRow("Lease for the blob has expired");
-                RemoveInfo(_id);
-            }
-            catch (LeaseLostException)
-            {
-                Logger.AddRow("LeaseLostException");
-                RemoveInfo(_id);
             }
             catch (Exception ex)
             {
@@ -163,24 +121,10 @@ namespace HealthAndAuditShared
                     Logger.AddRow("LeaseLostException");
                     RemoveInfo(_id);
                 }
-
             }
         }
 
-        public string GetNewBatchName(string orginalName, Dictionary<string, string> names)
-        {
-            const string addon = "X";
-            if (names.TryGetValue(orginalName, out var currentAlias))
-            {
-                names[orginalName] = currentAlias + addon;
-            }
-            else
-            {
-                currentAlias = orginalName + addon;
-                names.Add(orginalName, currentAlias);
-            }
-            return currentAlias;
-        }
+     
 
         public async Task CloseAsync(PartitionContext context, CloseReason reason)
         {
