@@ -68,20 +68,11 @@ namespace HealthAndAuditShared
                 throw new Exception("Processor not initialized. Run Init() before starting");
             }
 
-            AddNewInfo(_id, "Processing");
-            var parsedData = messages.Select(eventData => Encoding.UTF8.GetString(eventData.GetBytes())).Select(JsonConvert.DeserializeObject<SystemEvent>).ToList();
-            if (Engine.EngineIsRunning)
-            {
-                await Engine.AddToMainQueue(parsedData);
-                AddNewInfo(_id, parsedData.Count + " events added to engine");
-            }
-            else
-            {
-                AddNewInfo(_id, "Engine is not running. Cannot add events. Aborting.");
-                return;
-            }
+            AddNewInfo(_id, "Processing");           
+           
             try
             {
+                var parsedData = messages.Select(eventData => Encoding.UTF8.GetString(eventData.GetBytes())).Select(JsonConvert.DeserializeObject<SystemEvent>).ToList();
                 var workInfo = await EventStore.StoreEventsAsync(parsedData);
                 if (string.IsNullOrEmpty(workInfo))
                 {
@@ -90,6 +81,16 @@ namespace HealthAndAuditShared
                 else
                 {
                     AddNewInfo(_id, workInfo);
+                }
+                if (Engine.EngineIsRunning)
+                {
+                    await Engine.AddToMainQueue(parsedData);
+                    AddNewInfo(_id, parsedData.Count + " events added to engine");
+                }
+                else
+                {
+                    AddNewInfo(_id, "Engine is not running. Cannot add events. Aborting.");
+                    return;
                 }
             }
             catch (Exception ex)

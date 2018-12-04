@@ -27,10 +27,12 @@ namespace HealthAndAuditShared
 
         public Task<string> StoreEventsAsync(List<SystemEvent> events)
         {
+            SystemEvent currentEvent = null;
             try
             {
                 foreach (var @event in events)
                 {
+                    currentEvent = @event;
                     using (var connection = new SqlConnection(ConnectionString))
                     {
                         connection.Open();
@@ -46,6 +48,8 @@ namespace HealthAndAuditShared
             catch (Exception ex)
             {
                 Logger.AddRow("!!ERROR!! during DB save of events. " + ex);
+                var backUpStorage = new FileLogger(filePrefix: "failedSQLInsert_", maxIterations: 20, maxFilesize: 1024 * 2048, async: true);
+                backUpStorage.AddRow(JsonConvert.SerializeObject(currentEvent));
                 return Task.Factory.StartNew(() => { return "Exception when saving to DB"; });
             }
             return Task.Factory.StartNew(() => { return "Events saved to DB"; });

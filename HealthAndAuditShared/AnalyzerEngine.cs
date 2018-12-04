@@ -391,11 +391,18 @@ namespace HealthAndAuditShared
                                    }
                                    catch (Exception ex)
                                    {
-                                       AnalyzerChangeState(State.Stopped);
-                                       var message = $"Exception in {nameof(ProgramAnalyzer)}.{nameof(StartAnalyzer)} for {ProgramName}.";
-                                       OnReportException?.Invoke(message, ex);
-                                       var alarmMessage = new AlarmMessage(AlarmLevel.Medium, AppDomain.CurrentDomain.FriendlyName,message, ex.InnerException?.Message ?? ex.Message);
-                                       AlarmMessageManager.RaiseAlarm(alarmMessage);
+                                       try
+                                       {
+                                           AnalyzerChangeState(State.Stopped);
+                                           var message = $"Exception in {nameof(ProgramAnalyzer)}.{nameof(StartAnalyzer)} for {ProgramName}.";
+                                           OnReportException?.Invoke(message, ex);
+                                           var alarmMessage = new AlarmMessage(AlarmLevel.Medium, AppDomain.CurrentDomain.FriendlyName, message, ex.InnerException?.Message ?? ex.Message);
+                                           AlarmMessageManager.RaiseAlarm(alarmMessage);
+                                       }
+                                       catch(Exception ex2)
+                                       {                                           
+                                           OnReportException?.Invoke("Exception in Exception handling", ex2);
+                                       }
                                    }
                                }
                     );
